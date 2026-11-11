@@ -1,0 +1,29 @@
+# secret and internal system settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+# local runtime and review databases
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+.DS_Store
+__MACOSX/
+# generated reports; keep synthesized source inputs
+*_report.json
+report.json
+*.tmp
+.github/

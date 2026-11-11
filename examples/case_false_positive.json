@@ -1,0 +1,11 @@
+{
+  "case_id": "DEMO-FALSE-POSITIVE-001",
+  "subjects": [{"subject_id": "person_demo_B", "entity_type": "person", "role": "director", "facts": [
+    {"side": "applicant", "field": "name", "value": "张某", "evidence_id": "SYNTHETIC:KYB:NAME:B", "origin": "kyb_verified", "checked": true},
+    {"side": "applicant", "field": "dob", "value": "2002-09-29", "evidence_id": "SYNTHETIC:KYB:DOB:B", "origin": "kyb_verified", "checked": true}
+  ]}],
+  "hits": [{"hit_id": "HIT-FALSE-POSITIVE-001", "subject_id": "person_demo_B", "category": "enforcement", "entity_type": "person", "facts": [
+    {"side": "hit", "field": "name", "value": "张某", "evidence_id": "SYNTHETIC:LN:NAME:B", "origin": "ln_structured", "checked": true},
+    {"side": "hit", "field": "dob", "value": "1961-03-07", "evidence_id": "SYNTHETIC:LN:DOB:B", "origin": "ln_structured", "checked": true}
+  ], "research_keys": [], "notes": "SYNTHETIC FALSE POSITIVE CANDIDATE; final exclusion still requires manual approval."}]
+}

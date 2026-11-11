@@ -1,0 +1,436 @@
+{
+  "case_id": "DEMO-2026-001",
+  "subjects": [
+    {
+      "subject_id": "p1",
+      "entity_type": "person",
+      "role": "董事/管理员",
+      "facts": [
+        {
+          "side": "applicant",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "kyb:p1:name",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "applicant",
+          "field": "dob",
+          "value": "1995-06-15",
+          "evidence_id": "kyb:p1:dob",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "applicant",
+          "field": "document_number",
+          "value": "SYNTHETIC-P001",
+          "evidence_id": "kyb:p1:id",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": "CN_NATIONAL_ID"
+        },
+        {
+          "side": "applicant",
+          "field": "region",
+          "value": "北京市",
+          "evidence_id": "kyb:p1:region",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "applicant",
+          "field": "business_region",
+          "value": "北京市",
+          "evidence_id": "kyb:p1:biz",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "applicant",
+          "field": "address",
+          "value": "北京市朝阳区测试路8号",
+          "evidence_id": "kyb:p1:address",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "subject_id": "c1",
+      "entity_type": "company",
+      "role": "入网商户",
+      "facts": [
+        {
+          "side": "applicant",
+          "field": "company_name",
+          "value": "晨星贸易有限公司",
+          "evidence_id": "kyb:c1:name",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "applicant",
+          "field": "registration_number",
+          "value": "SYNTHETIC-COMPANY-001",
+          "evidence_id": "kyb:c1:reg",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": "COMPANY_REGISTRY"
+        },
+        {
+          "side": "applicant",
+          "field": "address",
+          "value": "北京市朝阳区测试路8号",
+          "evidence_id": "kyb:c1:address",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "subject_id": "a1",
+      "entity_type": "address",
+      "role": "商户地址",
+      "facts": [
+        {
+          "side": "applicant",
+          "field": "address",
+          "value": "北京市朝阳区测试路8号",
+          "evidence_id": "kyb:a1:address",
+          "origin": "kyb_verified",
+          "checked": true,
+          "context": ""
+        }
+      ]
+    }
+  ],
+  "hits": [
+    {
+      "hit_id": "H01_DOB_CONFLICT",
+      "subject_id": "p1",
+      "category": "enforcement",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h1:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "dob",
+          "value": "1988-03-05",
+          "evidence_id": "ln:h1:dob",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H02_TIME_IMPOSSIBLE",
+      "subject_id": "p1",
+      "category": "pep",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h2:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "acted_in_year",
+          "value": "1990",
+          "evidence_id": "official:h2:acted",
+          "origin": "official_primary",
+          "checked": true,
+          "context": "held_position"
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H03_DOCUMENT_MATCH",
+      "subject_id": "p1",
+      "category": "sanctions",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h3:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "document_number",
+          "value": "SYNTHETIC-P001",
+          "evidence_id": "official:h3:doc",
+          "origin": "official_primary",
+          "checked": true,
+          "context": "CN_NATIONAL_ID"
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H04_FORMER_PEP_UNRESOLVED",
+      "subject_id": "p1",
+      "category": "pep",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h4:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "region",
+          "value": "北京市",
+          "evidence_id": "ln:h4:region",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "pep_status",
+          "value": "former",
+          "evidence_id": "ln:h4:pep",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H05_INVESTIGATE_THEN_EXCLUDE",
+      "subject_id": "p1",
+      "category": "enforcement",
+      "research_keys": [
+        "official:case5"
+      ],
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h5:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H06_SANCTIONS_NAME_ONLY",
+      "subject_id": "p1",
+      "category": "sanctions",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h6:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H07_SUSPICIOUS_COINCIDENCE",
+      "subject_id": "p1",
+      "category": "adverse_media",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h7:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "address",
+          "value": "北京市朝阳区测试路8号",
+          "evidence_id": "ln:h7:address",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "region",
+          "value": "北京市",
+          "evidence_id": "ln:h7:region",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "event_recency",
+          "value": "recent",
+          "evidence_id": "ln:h7:recency",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H08_PHOTO_DIFFERENCE",
+      "subject_id": "p1",
+      "category": "enforcement",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h8:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "photo_comparison",
+          "value": "different",
+          "evidence_id": "analyst:h8:photo",
+          "origin": "public_secondary",
+          "checked": false,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H09_COMPANY_REG_MATCH",
+      "subject_id": "c1",
+      "category": "sanctions",
+      "entity_type": "company",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "company_name",
+          "value": "晨星贸易有限公司",
+          "evidence_id": "ln:h9:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "registration_number",
+          "value": "SYNTHETIC-COMPANY-001",
+          "evidence_id": "official:h9:reg",
+          "origin": "official_primary",
+          "checked": true,
+          "context": "COMPANY_REGISTRY"
+        }
+      ]
+    },
+    {
+      "hit_id": "H10_ADDRESS_ONLY",
+      "subject_id": "a1",
+      "category": "sanctions",
+      "entity_type": "address",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "address",
+          "value": "北京市朝阳区测试路8号",
+          "evidence_id": "ln:h10:address",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ]
+    },
+    {
+      "hit_id": "H11_DOB_MATCH_THEN_CONFLICT",
+      "subject_id": "p1",
+      "category": "enforcement",
+      "research_keys": [
+        "official:case11"
+      ],
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h11:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "dob",
+          "value": "1995-06-15",
+          "evidence_id": "ln:h11:dob",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    },
+    {
+      "hit_id": "H12_DOB_MATCH_ONLY",
+      "subject_id": "p1",
+      "category": "enforcement",
+      "facts": [
+        {
+          "side": "hit",
+          "field": "name",
+          "value": "李文",
+          "evidence_id": "ln:h12:name",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        },
+        {
+          "side": "hit",
+          "field": "dob",
+          "value": "1995-06-15",
+          "evidence_id": "ln:h12:dob",
+          "origin": "ln_structured",
+          "checked": true,
+          "context": ""
+        }
+      ],
+      "entity_type": "person"
+    }
+  ]
+}

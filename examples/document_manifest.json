@@ -1,0 +1,9 @@
+{
+  "documents": [
+    {"id":"penalty_notice","file":"documents/synthetic_penalty_notice.html",
+     "content_type":"text/html","source_url":"https://example.invalid/synthetic_penalty_notice.html",
+     "title":"模拟金融监管公告","publisher":"模拟来源（非真实监管机构）",
+     "document_number":"SYNTHETIC-PENALTY-001",
+     "retrieved_at":"2026-11-11T00:00:00+00:00"}
+  ]
+}

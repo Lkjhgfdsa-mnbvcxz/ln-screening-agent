@@ -1,0 +1,11 @@
+{
+  "case_id": "DEMO-STRONG-LINK-001",
+  "subjects": [{"subject_id": "merchant_demo_A", "entity_type": "company", "role": "merchant", "facts": [
+    {"side": "applicant", "field": "company_name", "value": "SYNTHETIC ORBIT TRADING LIMITED", "evidence_id": "SYNTHETIC:KYB:NAME:A", "origin": "kyb_verified", "checked": true},
+    {"side": "applicant", "field": "registration_number", "value": "SYNTHETIC-REG-A100", "evidence_id": "SYNTHETIC:KYB:REG:A", "origin": "kyb_verified", "checked": true, "context": "COMPANY_REGISTRY"}
+  ]}],
+  "hits": [{"hit_id": "HIT-STRONG-LINK-001", "subject_id": "merchant_demo_A", "category": "enforcement", "entity_type": "company", "facts": [
+    {"side": "hit", "field": "company_name", "value": "SYNTHETIC ORBIT TRADING LIMITED", "evidence_id": "SYNTHETIC:LN:NAME:A", "origin": "ln_structured", "checked": true},
+    {"side": "hit", "field": "registration_number", "value": "SYNTHETIC-REG-A100", "evidence_id": "SYNTHETIC:LN:REG:A", "origin": "ln_structured", "checked": true, "context": "COMPANY_REGISTRY"}
+  ], "research_keys": [], "notes": "SYNTHETIC MATCH: exact fictional registration ID, not a verified real entity."}]
+}

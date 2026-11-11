@@ -1,0 +1,11 @@
+{
+  "case_id":"DOCUMENT-DEMO-001",
+  "subjects":[{"subject_id":"person-1","entity_type":"person","role":"董事",
+    "facts":[
+      {"side":"applicant","field":"name","value":"张宏","evidence_id":"synthetic:kyb:name","origin":"kyb_verified","checked":true},
+      {"side":"applicant","field":"dob","value":"2002-09-29","evidence_id":"synthetic:kyb:dob","origin":"kyb_verified","checked":true}
+    ]}],
+  "hits":[{"hit_id":"LN-DEMO-001","subject_id":"person-1","entity_type":"person","category":"enforcement","alert_id":"DEMO-A-001",
+    "facts":[{"side":"hit","field":"name","value":"张宏","evidence_id":"synthetic:ln:name","origin":"ln_structured","checked":true}],
+    "research_keys":["doc:penalty_notice"]}]
+}

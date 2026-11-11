@@ -1,0 +1,463 @@
+{
+  "case_id": "DOCUMENT-DEMO-001",
+  "policy_version": "CANDIDATE-0.2",
+  "read_only": true,
+  "human_approval_required": true,
+  "results": [
+    {
+      "hit_id": "LN-DEMO-001",
+      "route": "FACT_VERIFICATION_REVIEW",
+      "identity": "unresolved",
+      "suspicion": null,
+      "evidence": {
+        "exclusion_rules": [],
+        "linked_rules": [],
+        "soft_signals": [
+          "name_exact"
+        ],
+        "data_issues": [],
+        "anchors": []
+      },
+      "reasons": [
+        "文档包含尚未核实的人物事件事实，必须先确认来源、上下文与对应主体；不得进入低分放行"
+      ],
+      "actions": [
+        "RESEARCH_QUERY:doc:penalty_notice"
+      ],
+      "history": [
+        {
+          "step": 1,
+          "known_hit_facts": 1,
+          "checked_research_keys": [],
+          "applied_skill": "PERSON_CHECK_V0.2",
+          "exclusion_rules": [],
+          "linked_rules": [],
+          "data_issues": [],
+          "gate_flags": []
+        },
+        {
+          "step": 2,
+          "known_hit_facts": 2,
+          "checked_research_keys": [
+            "doc:penalty_notice"
+          ],
+          "applied_skill": "PERSON_CHECK_V0.2",
+          "exclusion_rules": [],
+          "linked_rules": [],
+          "data_issues": [],
+          "gate_flags": []
+        }
+      ],
+      "review_required": true,
+      "policy_version": "CANDIDATE-0.2",
+      "disposition_flags": [],
+      "exclusion_evidence_detected": false,
+      "exclusion_authorized": false,
+      "investigation_status": "awaiting_verification",
+      "skip_reason": null,
+      "tried_actions": [
+        {
+          "action": "doc:penalty_notice",
+          "outcome": "completed",
+          "new_fact_candidates": 1
+        }
+      ],
+      "evidence_of_attempt": [
+        {
+          "action": "doc:penalty_notice",
+          "document_id": "penalty_notice",
+          "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+          "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "target_matches": 3,
+          "material_leads": 4
+        }
+      ],
+      "document_evidence": [
+        {
+          "document_id": "penalty_notice",
+          "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+          "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "targeted_spans": [
+            {
+              "evidence_id": "EV-0820e446d55d26e5",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "张宏",
+              "page": null,
+              "block_index": 3,
+              "section": "一、有关人员",
+              "location_hint": "",
+              "exact_excerpt": "张宏于1998年担任某银行副行长，涉及当年的相关业务。文中的任职年份属于原文明确记载，仍需核实来源内容及人物对应关系。",
+              "context_before": [
+                "一、有关人员"
+              ],
+              "context_after": [
+                "该机构于2023年发布本次公告。2023年是发布日期，并非张宏的任职年份。"
+              ],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-86b31129c8bbf3eb",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "张宏",
+              "page": null,
+              "block_index": 4,
+              "section": "一、有关人员",
+              "location_hint": "",
+              "exact_excerpt": "该机构于2023年发布本次公告。2023年是发布日期，并非张宏的任职年份。",
+              "context_before": [
+                "张宏于1998年担任某银行副行长，涉及当年的相关业务。文中的任职年份属于原文明确记载，仍需核实来源内容及人物对应关系。"
+              ],
+              "context_after": [],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-f801772281db2e1a",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "张宏",
+              "page": null,
+              "block_index": 7,
+              "section": "二、其他人员",
+              "location_hint": "",
+              "exact_excerpt": "张宏 | 另一名同名人员，所在单位不明",
+              "context_before": [
+                "姓名 | 说明"
+              ],
+              "context_after": [],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            }
+          ],
+          "material_leads": [
+            {
+              "label": "CORRECTION_OR_RETRACTION",
+              "evidence_id": "EV-7258ba593c61989f",
+              "reason": "全篇材料扫描发现需核实的潜在重要信息，尚未确认与筛查主体关联"
+            },
+            {
+              "label": "CORRECTION_OR_RETRACTION",
+              "evidence_id": "EV-dacaa00b12b8a31a",
+              "reason": "全篇材料扫描发现需核实的潜在重要信息，尚未确认与筛查主体关联"
+            },
+            {
+              "label": "CASE_LINK",
+              "evidence_id": "EV-059a80b2b6aa396a",
+              "reason": "全篇材料扫描发现需核实的潜在重要信息，尚未确认与筛查主体关联"
+            },
+            {
+              "label": "CASE_LINK",
+              "evidence_id": "EV-93869f9a655f8fab",
+              "reason": "全篇材料扫描发现需核实的潜在重要信息，尚未确认与筛查主体关联"
+            }
+          ],
+          "evidence_spans": [
+            {
+              "evidence_id": "EV-0820e446d55d26e5",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "张宏",
+              "page": null,
+              "block_index": 3,
+              "section": "一、有关人员",
+              "location_hint": "",
+              "exact_excerpt": "张宏于1998年担任某银行副行长，涉及当年的相关业务。文中的任职年份属于原文明确记载，仍需核实来源内容及人物对应关系。",
+              "context_before": [
+                "一、有关人员"
+              ],
+              "context_after": [
+                "该机构于2023年发布本次公告。2023年是发布日期，并非张宏的任职年份。"
+              ],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-86b31129c8bbf3eb",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "张宏",
+              "page": null,
+              "block_index": 4,
+              "section": "一、有关人员",
+              "location_hint": "",
+              "exact_excerpt": "该机构于2023年发布本次公告。2023年是发布日期，并非张宏的任职年份。",
+              "context_before": [
+                "张宏于1998年担任某银行副行长，涉及当年的相关业务。文中的任职年份属于原文明确记载，仍需核实来源内容及人物对应关系。"
+              ],
+              "context_after": [],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-f801772281db2e1a",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "张宏",
+              "page": null,
+              "block_index": 7,
+              "section": "二、其他人员",
+              "location_hint": "",
+              "exact_excerpt": "张宏 | 另一名同名人员，所在单位不明",
+              "context_before": [
+                "姓名 | 说明"
+              ],
+              "context_after": [],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-7258ba593c61989f",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "material:CORRECTION_OR_RETRACTION",
+              "page": null,
+              "block_index": 8,
+              "section": "三、更正说明",
+              "location_hint": "",
+              "exact_excerpt": "三、更正说明",
+              "context_before": [],
+              "context_after": [
+                "更正：原始名单中的个别人员出生信息存在录入错误，详见原附件。本段仅作为提醒核查来源冲突的线索。"
+              ],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-dacaa00b12b8a31a",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "material:CORRECTION_OR_RETRACTION",
+              "page": null,
+              "block_index": 9,
+              "section": "三、更正说明",
+              "location_hint": "",
+              "exact_excerpt": "更正：原始名单中的个别人员出生信息存在录入错误，详见原附件。本段仅作为提醒核查来源冲突的线索。",
+              "context_before": [
+                "三、更正说明"
+              ],
+              "context_after": [
+                "参考文件：附件一：原始人员名册（仅记录链接，程序不自动下载）。"
+              ],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-059a80b2b6aa396a",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "material:CASE_LINK",
+              "page": null,
+              "block_index": 9,
+              "section": "三、更正说明",
+              "location_hint": "",
+              "exact_excerpt": "更正：原始名单中的个别人员出生信息存在录入错误，详见原附件。本段仅作为提醒核查来源冲突的线索。",
+              "context_before": [
+                "三、更正说明"
+              ],
+              "context_after": [
+                "参考文件：附件一：原始人员名册（仅记录链接，程序不自动下载）。"
+              ],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            },
+            {
+              "evidence_id": "EV-93869f9a655f8fab",
+              "document_id": "penalty_notice",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "sha256": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+              "title": "模拟金融监管公告",
+              "publisher": "模拟来源（非真实监管机构）",
+              "query": "material:CASE_LINK",
+              "page": null,
+              "block_index": 10,
+              "section": "三、更正说明",
+              "location_hint": "",
+              "exact_excerpt": "参考文件：附件一：原始人员名册（仅记录链接，程序不自动下载）。",
+              "context_before": [
+                "更正：原始名单中的个别人员出生信息存在录入错误，详见原附件。本段仅作为提醒核查来源冲突的线索。"
+              ],
+              "context_after": [],
+              "retrieved_at": "2026-11-11T00:00:00+00:00",
+              "document_number": "SYNTHETIC-PENALTY-001",
+              "verified": false
+            }
+          ],
+          "extracted_fact_candidates": [
+            {
+              "candidate_id": "FC-ef4827f93c3727769b16",
+              "side": "hit",
+              "field": "acted_in_year",
+              "value": "1998",
+              "evidence_id": "EV-0820e446d55d26e5",
+              "origin": "model_extracted",
+              "checked": false,
+              "context": "event_candidate_unattributed",
+              "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+              "evidence_quote": "张宏于1998年担任某银行副行长，涉及当年的相关业务",
+              "location": {
+                "page": null,
+                "block_index": 3
+              }
+            }
+          ],
+          "parse_warnings": [],
+          "coverage": {
+            "blocks_scanned": 11,
+            "target_matches": 3,
+            "material_leads": 4,
+            "full_text_read": true,
+            "ocr_performed": false,
+            "source_identity_verified": false,
+            "source_metadata_verified": false,
+            "references_found": 1,
+            "truncated_target_results": false,
+            "truncated_material_results": false
+          },
+          "referenced_resources": [
+            {
+              "href": "/attachments/synthetic_original.xlsx",
+              "text": "附件一：原始人员名册",
+              "status": "not_fetched_not_verified"
+            }
+          ]
+        }
+      ],
+      "hit_evidence_links": [
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-0820e446d55d26e5",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        },
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-86b31129c8bbf3eb",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        },
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-f801772281db2e1a",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        },
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-7258ba593c61989f",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        },
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-dacaa00b12b8a31a",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        },
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-059a80b2b6aa396a",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        },
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "evidence_id": "EV-93869f9a655f8fab",
+          "document_id": "penalty_notice",
+          "source_hash": "2d3ba115f899790b6a043910639aec54bd2efeb3f5a15908ce92b4098f229b48",
+          "direction": "UNDETERMINED",
+          "applicability_checked": false,
+          "reason": "已定位原文，尚未核实资料及人物对应关系"
+        }
+      ],
+      "verification_records": [
+        {
+          "case_id": "DOCUMENT-DEMO-001",
+          "hit_id": "LN-DEMO-001",
+          "candidate_id": "FC-ef4827f93c3727769b16",
+          "evidence_id": "EV-0820e446d55d26e5",
+          "status": "PENDING_HUMAN_VERIFICATION",
+          "reasons": [
+            "SOURCE_AUTHENTICITY_ATTRIBUTION_AND_EVENT_UNVERIFIED"
+          ],
+          "document_location": {
+            "page": null,
+            "block_index": 3,
+            "location_hint": "",
+            "section": "一、有关人员"
+          },
+          "source_url": "https://example.invalid/synthetic_penalty_notice.html",
+          "verification_id": null,
+          "reviewer_id": null
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "hits": 1,
+    "fixture_source_reads": 1
+  }
+}

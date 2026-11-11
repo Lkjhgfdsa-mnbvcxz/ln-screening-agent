@@ -1,0 +1,10 @@
+[project]
+name = "ln-screening-agent-integrated"
+version = "0.6.0"
+description = "Synthetic-data-only, read-only LN screening decision harness prototype"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ln_agent*"]

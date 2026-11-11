@@ -1,0 +1,24 @@
+{
+  "official:case5": [
+    {
+      "side": "hit",
+      "field": "dob",
+      "value": "1970-09-09",
+      "evidence_id": "official:h5:dob",
+      "origin": "official_primary",
+      "checked": true,
+      "context": ""
+    }
+  ],
+  "official:case11": [
+    {
+      "side": "hit",
+      "field": "dob",
+      "value": "1980-01-01",
+      "evidence_id": "official:h11:dob",
+      "origin": "official_primary",
+      "checked": true,
+      "context": ""
+    }
+  ]
+}
