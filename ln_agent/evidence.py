@@ -6,9 +6,25 @@ from datetime import date
 from collections import defaultdict
 from .models import Fact, EvidenceResult
 
+# Legal entity suffix equivalences (compared after separators are stripped).
+# "LTD"/"LIMITED", "INC"/"INCORPORATED", "CORP"/"CORPORATION", "CO"/"COMPANY" are
+# the same legal suffix and must not block a name-exact match.
+_SUFFIX_EQUIV = {
+    "ltd": "limited",
+    "inc": "incorporated",
+    "corp": "corporation",
+    "co": "company",
+}
+
 def norm(s: str) -> str:
     s = unicodedata.normalize("NFKC", str(s)).casefold()
-    return re.sub(r"[\s.,，。\-_/（）()]+", "", s)
+    s = re.sub(r"[\s.,，。\-_/（）()]+", "", s)
+    # canonicalize legal suffixes; suffixes only appear at the end of entity names
+    for abbrev, full in _SUFFIX_EQUIV.items():
+        if s.endswith(abbrev) and len(s) > len(abbrev):
+            s = s[: -len(abbrev)] + full
+            break
+    return s
 
 def iso_dob(raw: str) -> date | None:
     try:
