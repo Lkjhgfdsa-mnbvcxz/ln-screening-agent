@@ -38,7 +38,7 @@ class PublicDemoSafetyTests(unittest.TestCase):
     def test_published_data_is_synthetic_only(self):
         p = _payload()
         blob = json.dumps(p, ensure_ascii=False)
-        self.assertEqual(p["schema"], "ln-agent-demo-workbench/1.0")
+        self.assertEqual(p["schema"], "ln-agent-demo-workbench/1.1")
         for marker in FORBIDDEN:
             self.assertNotIn(marker, blob, f"real-data marker leaked: {marker}")
         self.assertIsNone(INTERNAL_HOST.search(blob), "internal system URL leaked")
@@ -105,10 +105,38 @@ class PublicDemoSafetyTests(unittest.TestCase):
             self.assertAlmostEqual(case["wall_ms"], round(engine / 4, 1), places=1)
             self.assertAlmostEqual(case["mean_ms_per_hit"],
                                    round(engine / case["hit_count"], 1), places=1)
+            self.assertGreater(case["speedup"], 3.5)
+            for hit in case["hits"]:
+                self.assertAlmostEqual(sum(hit["stage_ms"]), hit["duration_ms"],
+                                       delta=0.4)
         t = p["totals"]
         self.assertAlmostEqual(t["mean_ms_per_hit"],
                                round(t["engine_ms"] / t["hits"], 1), places=1)
-        self.assertLess(t["wall_ms"], t["engine_ms"], "parallel wall time missing")
+        self.assertLess(t["mean_wall_ms_per_hit"], t["mean_ms_per_hit"],
+                        "post-parallel share must be smaller than one hit's cost")
+
+    def test_concurrency_model_starts_all_subjects_together(self):
+        p = _payload()
+        cc, t = p["concurrency"], p["totals"]
+        self.assertTrue(cc["cases_start_together"])
+        self.assertEqual(cc["workers_per_case"], 4)
+        self.assertEqual(cc["total_workers_if_isolated"], 32)
+        self.assertAlmostEqual(t["wall_ms"],
+                               max(c["wall_ms"] for c in p["cases"]), places=1)
+        self.assertAlmostEqual(t["wall_ms_shared_pool"],
+                               round(t["engine_ms"] / 4, 1), places=1)
+        self.assertAlmostEqual(t["wall_ms_serial_cases"],
+                               round(sum(c["wall_ms"] for c in p["cases"]), 1),
+                               places=1)
+        # The old bug: treating the post-parallel share as one hit's cost and
+        # then dividing by 4 again (double-counted speedup).
+        self.assertGreater(t["mean_ms_per_hit"], 300)
+        self.assertLess(t["mean_wall_ms_per_hit"], 120)
+        self.assertIn("39 轮", cc["why_not_one_hit"])
+        html = DEMO_HTML.read_text(encoding="utf-8")
+        self.assertIn("同时开始", html)
+        self.assertIn("为什么不是", html)
+        self.assertIn("总墙钟由最慢的那张单决定", html)
 
     def test_html_embeds_the_same_data_and_has_no_external_resources(self):
         html = DEMO_HTML.read_text(encoding="utf-8")

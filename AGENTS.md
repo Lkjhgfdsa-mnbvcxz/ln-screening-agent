@@ -59,3 +59,9 @@ No real merchant/customer data or credentials should be committed.
 - `_assert_synthetic()` in `build_demo.py` and `tests/test_public_demo.py` are the publication guard. Keep zero external resources (`<script src>`, stylesheets, `fetch`, XHR, remote images) so the page works from GitHub Pages and from `file://`.
 - Timing invariants: `engine_ms` is the sum of per-hit costs, `wall_ms = engine_ms / workers`, `mean_ms_per_hit = engine_ms / hits`. Never divide parallel wall time by hit count again.
 - Real screenshots under `assets/demo-*.jpg` are generated from an isolated headless Chrome rendering of the current `demo.html`; regenerate them whenever the demo layout changes.
+
+## Concurrency semantics (v0.9.5)
+
+- `Orchestrator.stats.elapsed_ms` is the **whole-case wall clock after `ThreadPoolExecutor(max_workers=N)`**, never the sum of per-hit costs. Per-hit work comes from the top-level `duration_ms` on `HIT_FINISHED` events (not `details.duration_ms`).
+- Keep three wall-clock figures separate: per-case wall (N workers), the serial sum over cases (how the authorized run actually executed), and the ideal all-cases-start-together wall (the slowest case, needing N x cases concurrent workers). Never divide a wall clock by the worker count twice, and never label the amortised `wall / hits` share as "duration of one hit".
+- The static demo shows all checklist subjects 同时开始、互不干扰; the real authorized run executed cases sequentially. State this difference on the page. Animation duration per card must be proportional to that case's own wall clock, not its index.

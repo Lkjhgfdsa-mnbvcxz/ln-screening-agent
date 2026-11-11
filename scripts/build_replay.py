@@ -5,7 +5,7 @@ embeds the *actual* emitted event stream into a single static HTML file. No
 network request, no credential, no real merchant / identity / internal URL is
 ever read by this script.
 
-    python3 scripts/build_replay.py --tests 218
+    python3 scripts/build_replay.py --tests 219
 
 Outputs:
     examples/workbuddy_capture_replay.json   machine-readable replay data
@@ -46,9 +46,18 @@ AUTHORIZED_RUN_AGGREGATES = {
     "cases": 8,
     "hits": 154,
     "events": 3360,
+    # Whole-case wall clocks summed across the 8 cases, which were run one
+    # after another in the authorized environment (not started together).
     "engine_ms": 15922.158,
     "wall_ms": 15942.572,
+    # 15922.158 / 154 = post-parallel amortised wall share, NOT the duration
+    # of a single hit. One hit actually costs ~394.863 ms of engine work.
     "mean_engine_ms_per_hit": 103.391,
+    "mean_single_hit_ms": 394.863,
+    "sum_single_hit_durations_ms": 60808.866,
+    "wall_ms_all_cases_start_together": 9290.271,
+    "wall_ms_shared_4_worker_pool": 15202.217,
+    "speedup_large_case": 3.97,
     "capture_tool_reads": {
         "workbuddy_browser_readonly": 154,
         "workbuddy_llm_capture": 16,
@@ -405,7 +414,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
   const agg = DATA.validation.authorized_local_aggregates;
   $("notice").innerHTML = `<strong>数据来源：</strong>${esc(DATA.disclaimer)} 本页事件来自合成案例的一次真实引擎执行；`
     + `授权内部环境另完成 <b>${agg.cases}</b> 张工单 / <b>${agg.hits}</b> 条命中 / <b>${agg.events}</b> 个事件的聚合验证`
-    + `（引擎 ${agg.engine_ms.toFixed(0)} ms，平均 ${agg.mean_engine_ms_per_hit} ms/命中，人工队列 ${agg.manual_queue_tasks}，自动发送 ${agg.automatic_sends}）。`
+    + `（逐单串行累计墙钟 ${agg.engine_ms.toFixed(0)} ms；单条命中实际 ${agg.mean_single_hit_ms} ms，4 workers 并行后摊到每条 ${agg.mean_engine_ms_per_hit} ms；人工队列 ${agg.manual_queue_tasks}，自动发送 ${agg.automatic_sends}）。`
     + `真实业务数据、完整日志与内部链接仅保留在授权环境，未进入本仓库。`;
 
   const stageName = {orchestrator:"调度",skill:"Skill",policy:"PolicyGuard",risk_gate:"Risk Gate",rule_engine:"Rule Engine",investigation:"调查",evidence:"证据",disposition:"处置",suspicion:"内部风险"};

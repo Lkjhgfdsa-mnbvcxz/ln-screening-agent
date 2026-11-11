@@ -70,7 +70,9 @@ CONCLUSION_REASONS = {
 }
 
 STAGES = ["排队", "规则核验", "调查取证", "结论草稿", "已完成"]
-STAGE_MS = [8, 24, 38, 22, 10]
+# Relative share of one hit's own execution time; absolute values are derived
+# per hit so the 5-stage bar always adds up to that hit's measured duration.
+STAGE_WEIGHTS = (0.10, 0.24, 0.38, 0.20, 0.08)
 
 # Subject profiling is part of the company_ln / person_ln Skill contracts
 # (director, owner, jurisdiction, registration_number, employer, role). The
@@ -152,8 +154,10 @@ def build() -> dict:
             else:
                 name = f"{PERSON_WORDS[i % len(PERSON_WORDS)]}, " \
                        f"{PERSON_WORDS[(i + 5) % len(PERSON_WORDS)]} {ci + 1:02d}-{n:02d}"
-            # Per-hit cost is essentially flat; big checklists are parallelised.
-            duration = round(96 + ((ci * 7 + i * 11) % 17) + (3 if count > 40 else 0), 1)
+            # A single hit really costs ~395 ms of engine work in the authorized
+            # run (HIT_FINISHED.duration_ms). The 103 ms figure seen elsewhere is
+            # the WALL-CLOCK share after 4 workers, not the duration of one hit.
+            duration = round(372 + ((ci * 7 + i * 11) % 47) + (6 if count > 40 else 0), 1)
             path = ["EVALUATE", "INVESTIGATE · workbuddy_browser_readonly",
                     "EVALUATE", "RESIDUAL_SUSPICION" if conclusion == "无法确定" else "WRITE_DISPOSITION"]
             if conclusion == "疑似命中":
@@ -171,15 +175,16 @@ def build() -> dict:
                 "duration_ms": duration,
                 "reason": _reason(conclusion, domain, ln_id),
                 "stages": STAGES,
-                "stage_ms": STAGE_MS,
+                "stage_ms": [round(duration * w, 1) for w in STAGE_WEIGHTS],
                 "path": path,
                 "source_count": 3 + (i % 8),
             })
         dist = {c: mix[c] for c in ("命中", "疑似命中", "未命中", "无法确定") if mix[c]}
-        # engine_ms = sum of per-hit costs (what the engine actually spent);
-        # wall_ms = that work spread across 4 workers. Never divide wall time
-        # by hit count again -- that produces a meaningless "ms per hit".
+        # engine_ms is the SUM of this case's per-hit work (no parallelism yet).
+        # wall_ms is that same case after its own 4 workers split the hits.
+        # The two must never be divided by each other a second time.
         engine_ms = round(sum(h["duration_ms"] for h in hits), 1)
+        wall_ms = round(engine_ms / 4, 1)
         cases.append({
             "case_id": cid,
             "subject": subject,
@@ -187,7 +192,8 @@ def build() -> dict:
             "hit_count": count,
             "workers": 4,
             "engine_ms": engine_ms,
-            "wall_ms": round(engine_ms / 4, 1),
+            "wall_ms": wall_ms,
+            "speedup": round(engine_ms / wall_ms, 2) if wall_ms else 1.0,
             "mean_ms_per_hit": round(engine_ms / count, 1),
             "conclusion_distribution": dist,
             "profile": _profile(ci, entity, subject),
@@ -197,18 +203,44 @@ def build() -> dict:
     dist = {k: sum(c["conclusion_distribution"].get(k, 0) for c in cases)
             for k in ("命中", "疑似命中", "未命中", "无法确定")}
     engine_total = round(sum(c["engine_ms"] for c in cases), 1)
+    wall_serial = round(sum(c["wall_ms"] for c in cases), 1)
+    wall_together = max(c["wall_ms"] for c in cases)
+    wall_shared = round(engine_total / 4, 1)
     return {
-        "schema": "ln-agent-demo-workbench/1.0",
+        "schema": "ln-agent-demo-workbench/1.1",
         "disclaimer": "SYNTHETIC ONLY — 所有工单号、主体、命中记录、域名与说明均为虚构；仅复现授权本地验证的运行形态与量级，不含任何真实业务数据。",
         "generated_by": "scripts/build_demo.py",
-        "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织，与项目本地 SSE 实时工作台同构；静态版无需 Python 后端。",
+        "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织。并发模型：8 个工单主体同时开始、互不干扰，每个主体内部再由 4 个 worker 并行处理自己的命中；静态版无需 Python 后端。",
+        "concurrency": {
+            "model": "m 个工单主体同时开始，每个主体内部 4 workers 按命中并行",
+            "cases_start_together": True,
+            "workers_per_case": 4,
+            "total_workers_if_isolated": 4 * len(cases),
+            "wall_ms_all_cases_together": wall_together,
+            "wall_ms_shared_pool": wall_shared,
+            "wall_ms_serial_cases": wall_serial,
+            "why_not_one_hit": (
+                "单条命中约 395 ms 是它自己的引擎工作量，不是整批完成时间。"
+                "并发度有限：154 条命中在共享 4-worker 池上至少要 154/4≈39 轮；"
+                "8 个主体同时开跑、每单各 4 workers（共 32 并发）时，"
+                "总墙钟由最慢的那张工单决定，仍然远大于 1 条命中的耗时。"
+            ),
+            "authorized_run_note": (
+                "授权本地实测是逐单运行（8 张工单一前一后），累计墙钟约 15.9 s；"
+                "本页展示的是 8 个主体同时开跑的理想并发视图，两者口径不同。"
+            ),
+        },
         "totals": {
             "cases": len(cases),
             "hits": total_hits,
             "workers": 4,
             "engine_ms": engine_total,
-            "wall_ms": round(sum(c["wall_ms"] for c in cases), 1),
+            "wall_ms": wall_together,
+            "wall_ms_shared_pool": wall_shared,
+            "wall_ms_serial_cases": wall_serial,
             "mean_ms_per_hit": round(engine_total / total_hits, 1),
+            "mean_wall_ms_per_hit": round(wall_serial / total_hits, 1),
+            "total_workers_if_isolated": 4 * len(cases),
             "conclusion_distribution": dist,
             "largest_case_hits": max(c["hit_count"] for c in cases),
         },
@@ -338,6 +370,11 @@ h1{font-size:24px;margin:0 0 7px;letter-spacing:-.3px}
 .profile .scan{margin-top:10px;font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:9px}
 .profile .scan b{color:var(--text)}
 .notice{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:11px 14px;color:var(--muted);font-size:12.5px;margin-top:18px}
+.notice p{margin:9px 0 0}.notice .fine{font-size:11.5px;opacity:.85}
+.cmodels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
+.cmodels div{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+.cmodels b{display:block;font-size:12px;color:var(--text)}
+.cmodels span{font-size:11.5px;color:var(--muted)}
 footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px;flex-wrap:wrap}
 @media(max-width:1050px){.cases{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:620px){.cases{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.hero-grid{grid-template-columns:repeat(2,1fr)}.hit .r2{grid-template-columns:1fr 70px}}
@@ -348,8 +385,8 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
 <header class="top">
   <div>
     <h1>LN 筛查 Agent · 核验工作台 Demo</h1>
-    <p class="sub">按<strong>工单主体</strong>组织：每张卡片是一张核查单，点进去看这条工单里<strong>每一条命中的处理进度与最终业务结论</strong>。点击「运行一遍 Demo」可看 4 workers 并行推进；也可用 <code>?autorun=1</code> 打开即自动运行。本页为静态单文件，无需后端、无需登录、全部为合成数据。</p>
-    <div class="badges"><span class="badge">8 个工单主体</span><span class="badge">154 条命中</span><span class="badge">按命中并行 · 4 workers</span><span class="badge">含企查查主体画像</span><span class="badge g">零外部请求</span><span class="badge">全部合成数据</span></div>
+    <p class="sub">按<strong>工单主体</strong>组织：每张卡片是一张核查单，点进去看这条工单里<strong>每一条命中的处理进度与最终业务结论</strong>。<strong>8 个工单主体同时开始、互不干扰</strong>，每个主体内部再由 4 个 worker 并行处理自己的命中；点「运行一遍 Demo」可看这一层并发，也可用 <code>?autorun=1</code> 打开即自动运行。本页为静态单文件，无需后端、无需登录、全部为合成数据。</p>
+    <div class="badges"><span class="badge">8 个主体同时开跑</span><span class="badge">154 条命中</span><span class="badge">每单 4 workers · 共 32 并发</span><span class="badge">含企查查主体画像</span><span class="badge g">零外部请求</span><span class="badge">全部合成数据</span></div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn primary" id="runall">▶ 运行一遍 Demo</button>
@@ -408,14 +445,30 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
    return `<div class="legend">${ORDER.filter(k=>dist[k]).map(k=>`<span><i class="dot ${COLORS[k]}"></i><b>${dist[k]}</b> ${k}</span>`).join("")}</div>`;
  }
  function renderKpis(){
-   const t=D.totals;
+   const t=D.totals, cc=D.concurrency;
    $("kpis").innerHTML=[
-     [t.cases,"工单主体"],[t.hits,"命中记录"],
-     [t.mean_ms_per_hit.toFixed(1)+" ms","单条命中平均耗时"],
-     [t.wall_ms.toFixed(0)+" ms","并行后总墙钟"],[t.workers,"并行 workers"]
+     [t.cases,"工单主体（同时开跑）"],[t.hits,"命中记录"],
+     [t.mean_ms_per_hit.toFixed(0)+" ms","单条命中实际耗时"],
+     [(t.wall_ms/1000).toFixed(1)+" s","8 主体同时开跑 · 总墙钟"],
+     [t.total_workers_if_isolated,"总并发 workers"]
    ].map(([v,k])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
    const big=D.cases.reduce((a,b)=>a.hit_count>b.hit_count?a:b);
-   $("scaleNote").innerHTML=`<strong>大批量命中怎么处理：</strong>工单内按命中切分，<b>4 个 worker 并行</b>调度同一套 Rule Engine → PolicyGuard → Investigation → Disposition 链路；每条命中独立完成即显示，不必等整单结束。8 张工单的引擎累计耗时 <b>${t.engine_ms.toFixed(0)} ms</b>，并行后墙钟 <b>${t.wall_ms.toFixed(0)} ms</b>；<b>单条命中平均 ${t.mean_ms_per_hit.toFixed(1)} ms</b>。最大的工单 <b>${big.case_id}</b> 有 <b>${big.hit_count}</b> 条命中，引擎累计 ${big.engine_ms.toFixed(0)} ms、并行墙钟 ${big.wall_ms.toFixed(0)} ms，平均仍是 <b>${big.mean_ms_per_hit.toFixed(1)} ms/命中</b>，与只有 1 条命中的工单同量级——单条成本不随工单规模放大。详情列表默认先渲染 25 条，可继续加载。`;
+   $("scaleNote").innerHTML=`<strong>并发模型：m 个工单主体一起干、互不干扰。</strong>
+     8 个主体<b>同时开始</b>，每个主体内部把命中切给 <b>4 个 worker</b>（共 ${t.total_workers_if_isolated} 并发），
+     各自走同一套 Rule Engine → PolicyGuard → Investigation → Disposition 链路，完成一条就显示一条。
+     <b>总墙钟由最慢的那张单决定</b>：${big.case_id} 有 ${big.hit_count} 条命中，
+     本单墙钟 ${big.wall_ms.toFixed(0)} ms，因此整批约 <b>${t.wall_ms.toFixed(0)} ms</b>。
+     <div class="cmodels">
+       <div><b>8 单同时开跑 · 每单 4 workers</b><span>${t.wall_ms.toFixed(0)} ms · 本页演示口径</span></div>
+       <div><b>全局共享 4-worker 池</b><span>${t.wall_ms_shared_pool.toFixed(0)} ms · 并发度不变</span></div>
+       <div><b>授权本地实测 · 逐单运行</b><span>${t.wall_ms_serial_cases.toFixed(0)} ms · 累计墙钟</span></div>
+     </div>
+     <p><strong>为什么不是「1 条命中的时间跑完 154 条」？</strong>单条命中实际约
+     <b>${t.mean_ms_per_hit.toFixed(0)} ms</b>，而 <b>${t.mean_wall_ms_per_hit.toFixed(0)} ms/命中</b>
+     只是并行后摊到每条的墙钟份额，两者都<b>不是整批完成时间</b>。并发度有限：共享 4-worker 池时
+     154 条命中至少要 154/4≈39 轮；把 worker 数提到 ≥154 才可能接近单条耗时，那不是当前配置。
+     ${esc(cc.why_not_one_hit)}</p>
+     <p class="fine">${esc(cc.authorized_run_note)} 详情列表默认先渲染 25 条，可继续加载。</p>`;
  }
  function renderCases(){
    $("cases").innerHTML=D.cases.map((c,i)=>`
@@ -425,7 +478,7 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
        <div class="big">${c.hit_count}<em>条命中</em></div>
        ${stack(c.conclusion_distribution)}
        ${legend(c.conclusion_distribution)}
-       <div class="row"><span>并行墙钟 ${c.wall_ms.toFixed(0)} ms</span><span>平均 ${c.mean_ms_per_hit.toFixed(1)} ms/命中</span></div>
+       <div class="row"><span>本单墙钟 ${c.wall_ms.toFixed(0)} ms</span><span>单条 ${c.mean_ms_per_hit.toFixed(0)} ms · ${c.speedup.toFixed(1)}x</span></div>
        <div class="foot"><span class="pill p-clear">已完成 · 结论草稿</span><span class="go">点进去查看 →</span></div>
        <div class="progress"></div>
      </div>`).join("");
@@ -442,12 +495,12 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
    window.scrollTo(0,0);
    const c=current;
    $("hero").innerHTML=`<h2>${esc(c.case_id)} · ${esc(c.subject)}</h2>
-     <div class="meta">${esc(c.entity_type)}主体 · ${c.hit_count} 条 LN 命中 · 4 workers 并行 · 所有结论均为未经审批的草稿</div>
+     <div class="meta">${esc(c.entity_type)}主体 · ${c.hit_count} 条 LN 命中 · 本单 4 workers（加速 ${c.speedup.toFixed(1)}x）· 与其他 7 个主体同时开跑 · 所有结论均为未经审批的草稿</div>
      <div class="hero-grid">
        <div><b>${c.hit_count}</b><span>命中记录</span></div>
-       <div><b>${c.engine_ms.toFixed(0)} ms</b><span>引擎累计耗时</span></div>
-       <div><b>${c.wall_ms.toFixed(0)} ms</b><span>4 workers 并行墙钟</span></div>
-       <div><b>${c.mean_ms_per_hit.toFixed(1)} ms</b><span>单条命中平均</span></div>
+       <div><b>${c.engine_ms.toFixed(0)} ms</b><span>单条耗时之和（未并行）</span></div>
+       <div><b>${c.wall_ms.toFixed(0)} ms</b><span>本单 4 workers 墙钟</span></div>
+       <div><b>${c.mean_ms_per_hit.toFixed(0)} ms</b><span>单条命中实际耗时</span></div>
      </div>${stack(c.conclusion_distribution)}${legend(c.conclusion_distribution)}`;
    const p=c.profile;
    $("profile").innerHTML=`<h3>主体画像 · ${esc(c.entity_type)}主体
@@ -493,7 +546,7 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
          <div><div class="steps">${h.stages.map(()=>"<i></i>").join("")}</div>
               <div class="phase">已完成 · ${esc(h.path[h.path.length-1])}</div></div>
          <span class="phase">${esc(h.source_domain)}</span>
-         <span class="ms">${h.duration_ms.toFixed(1)} ms</span>
+         <span class="ms" title="这条命中自己的引擎耗时，不是整批完成时间">${h.duration_ms.toFixed(1)} ms</span>
        </div>
        <div class="reason"><b>核查说明：</b>${esc(h.reason)}<br>
          <b>来源：</b>${esc(h.source_domain)} 等 ${h.source_count} 条记录源 · LN 记录号 ${esc(h.ln_id)} · ${esc(h.conclusion_status)}
@@ -510,9 +563,13 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
    $("runall").disabled=true;$("runcase").disabled=true;
    $("runall").textContent="运行中…";$("runcase").textContent="运行中…";
    const cards=[...$("cases").children];
-   cards.forEach((card,i)=>{card.querySelector(".progress").style.width="0%";});
+   // All m checklist subjects start at t=0 and never block each other. Each
+   // card's animation length is proportional to that case's own wall clock,
+   // so the slowest case finishes last and the fast ones finish earlier.
+   const span=2600, maxWall=Math.max(...D.cases.map(c=>c.wall_ms));
+   cards.forEach(card=>{card.querySelector(".progress").style.width="0%";});
    cards.forEach((card,i)=>{
-     const total=Math.min(2600,700+i*130);
+     const total=Math.max(420,span*(D.cases[i].wall_ms/maxWall));
      for(let s=1;s<=10;s++){
        timers.push(setTimeout(()=>{card.querySelector(".progress").style.width=(s*10)+"%";},total/10*s));
      }
@@ -520,19 +577,21 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
    timers.push(setTimeout(()=>{
      cards.forEach(c=>{const f=c.querySelector(".foot .pill"); if(f){f.textContent="已完成 · 结论草稿";}});
      stopTimers();
-   },Math.min(2600,700+(cards.length-1)*130)+120));
+   },span+120));
    if($("detail").classList.contains("on")) runDetail();
  }
  function runDetail(){
    const rows=[...$("hits").querySelectorAll(".hit")];
    rows.forEach(r=>r.querySelectorAll(".steps i").forEach(i=>i.classList.remove("on")));
    rows.forEach((row,idx)=>{
+     // 4 workers => 4 hits progress in the same wave, not one after another.
+     const wave=Math.floor(idx/4);
      for(let s=1;s<=5;s++){
        timers.push(setTimeout(()=>{
          const bars=row.querySelectorAll(".steps i");
          for(let k=0;k<s;k++) if(bars[k]) bars[k].classList.add("on");
          const ph=row.querySelector(".phase"); if(ph) ph.textContent=["排队中","规则核验","调查取证","结论草稿","已完成"][s-1];
-       },60+idx*45+s*85));
+       },60+wave*180+s*70));
      }
    });
  }
@@ -541,7 +600,7 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
    if(running)return; running=true; timers.forEach(clearTimeout);timers=[];
    $("runcase").disabled=true;$("runcase").textContent="运行中…";
    runDetail();
-   const last=60+Math.min(shown,visibleHits().length)*45+5*85;
+   const last=60+Math.ceil(Math.min(shown,visibleHits().length)/4)*180+5*70;
    timers.push(setTimeout(stopTimers,last+150));
  };
  $("theme").onclick=()=>{

@@ -17,7 +17,7 @@
     "events": [
       {
         "seq": 1,
-        "elapsed_ms": 0.099,
+        "elapsed_ms": 0.052,
         "kind": "CASE_STARTED",
         "stage": "orchestrator",
         "hit_id": null,
@@ -30,7 +30,7 @@
       },
       {
         "seq": 2,
-        "elapsed_ms": 0.34,
+        "elapsed_ms": 0.19,
         "kind": "HIT_STARTED",
         "stage": "orchestrator",
         "hit_id": "H1",
@@ -44,7 +44,7 @@
       },
       {
         "seq": 3,
-        "elapsed_ms": 0.562,
+        "elapsed_ms": 0.322,
         "kind": "HIT_STARTED",
         "stage": "orchestrator",
         "hit_id": "H2",
@@ -58,7 +58,7 @@
       },
       {
         "seq": 4,
-        "elapsed_ms": 0.77,
+        "elapsed_ms": 0.459,
         "kind": "HIT_STARTED",
         "stage": "orchestrator",
         "hit_id": "H3",
@@ -72,7 +72,7 @@
       },
       {
         "seq": 5,
-        "elapsed_ms": 61.933,
+        "elapsed_ms": 42.997,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H2",
@@ -88,7 +88,7 @@
       },
       {
         "seq": 6,
-        "elapsed_ms": 61.96,
+        "elapsed_ms": 43.024,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -97,11 +97,11 @@
           "check": "ingest",
           "allowed": true
         },
-        "duration_ms": 0.015
+        "duration_ms": 0.014
       },
       {
         "seq": 7,
-        "elapsed_ms": 62.183,
+        "elapsed_ms": 43.248,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -109,11 +109,11 @@
         "details": {
           "flags": []
         },
-        "duration_ms": 0.217
+        "duration_ms": 0.219
       },
       {
         "seq": 8,
-        "elapsed_ms": 62.395,
+        "elapsed_ms": 43.466,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H2",
@@ -127,11 +127,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.201
+        "duration_ms": 0.206
       },
       {
         "seq": 9,
-        "elapsed_ms": 62.416,
+        "elapsed_ms": 43.487,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -145,7 +145,7 @@
       },
       {
         "seq": 10,
-        "elapsed_ms": 62.435,
+        "elapsed_ms": 43.507,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -161,7 +161,7 @@
       },
       {
         "seq": 11,
-        "elapsed_ms": 67.562,
+        "elapsed_ms": 48.389,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H1",
@@ -177,7 +177,7 @@
       },
       {
         "seq": 12,
-        "elapsed_ms": 67.577,
+        "elapsed_ms": 48.407,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H1",
@@ -186,11 +186,11 @@
           "check": "ingest",
           "allowed": true
         },
-        "duration_ms": 0.009
+        "duration_ms": 0.011
       },
       {
         "seq": 13,
-        "elapsed_ms": 67.591,
+        "elapsed_ms": 48.425,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H1",
@@ -198,11 +198,11 @@
         "details": {
           "flags": []
         },
-        "duration_ms": 0.011
+        "duration_ms": 0.014
       },
       {
         "seq": 14,
-        "elapsed_ms": 67.63,
+        "elapsed_ms": 48.468,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H1",
@@ -216,11 +216,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.031
+        "duration_ms": 0.034
       },
       {
         "seq": 15,
-        "elapsed_ms": 67.645,
+        "elapsed_ms": 48.492,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H1",
@@ -234,7 +234,7 @@
       },
       {
         "seq": 16,
-        "elapsed_ms": 67.664,
+        "elapsed_ms": 48.506,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H1",
@@ -250,7 +250,7 @@
       },
       {
         "seq": 17,
-        "elapsed_ms": 72.546,
+        "elapsed_ms": 53.01,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H3",
@@ -266,7 +266,7 @@
       },
       {
         "seq": 18,
-        "elapsed_ms": 72.557,
+        "elapsed_ms": 53.021,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -279,7 +279,7 @@
       },
       {
         "seq": 19,
-        "elapsed_ms": 72.57,
+        "elapsed_ms": 53.033,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H3",
@@ -289,11 +289,11 @@
             "SCREENING_REVIEW_REQUIRED"
           ]
         },
-        "duration_ms": 0.01
+        "duration_ms": 0.009
       },
       {
         "seq": 20,
-        "elapsed_ms": 72.691,
+        "elapsed_ms": 53.155,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H3",
@@ -308,11 +308,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.115
+        "duration_ms": 0.116
       },
       {
         "seq": 21,
-        "elapsed_ms": 72.704,
+        "elapsed_ms": 53.169,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -326,7 +326,7 @@
       },
       {
         "seq": 22,
-        "elapsed_ms": 72.716,
+        "elapsed_ms": 53.181,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H3",
@@ -343,7 +343,7 @@
       },
       {
         "seq": 23,
-        "elapsed_ms": 77.994,
+        "elapsed_ms": 59.66,
         "kind": "TOOL_AUTHORIZED",
         "stage": "policy",
         "hit_id": "H2",
@@ -353,11 +353,11 @@
           "action_key": "boss:SYN-WB-CAPTURE-001:H2",
           "allowed": true
         },
-        "duration_ms": 15.516
+        "duration_ms": 16.104
       },
       {
         "seq": 24,
-        "elapsed_ms": 77.998,
+        "elapsed_ms": 59.665,
         "kind": "TOOL_STARTED",
         "stage": "investigation",
         "hit_id": "H2",
@@ -371,7 +371,7 @@
       },
       {
         "seq": 25,
-        "elapsed_ms": 82.656,
+        "elapsed_ms": 64.971,
         "kind": "TOOL_AUTHORIZED",
         "stage": "policy",
         "hit_id": "H1",
@@ -381,11 +381,11 @@
           "action_key": "boss:SYN-WB-CAPTURE-001:H1",
           "allowed": true
         },
-        "duration_ms": 14.965
+        "duration_ms": 16.429
       },
       {
         "seq": 26,
-        "elapsed_ms": 82.659,
+        "elapsed_ms": 64.976,
         "kind": "TOOL_STARTED",
         "stage": "investigation",
         "hit_id": "H1",
@@ -399,7 +399,7 @@
       },
       {
         "seq": 27,
-        "elapsed_ms": 87.472,
+        "elapsed_ms": 69.675,
         "kind": "TOOL_AUTHORIZED",
         "stage": "policy",
         "hit_id": "H3",
@@ -409,11 +409,11 @@
           "action_key": "boss:SYN-WB-CAPTURE-001:H3",
           "allowed": true
         },
-        "duration_ms": 14.733
+        "duration_ms": 16.469
       },
       {
         "seq": 28,
-        "elapsed_ms": 87.475,
+        "elapsed_ms": 69.678,
         "kind": "TOOL_STARTED",
         "stage": "investigation",
         "hit_id": "H3",
@@ -427,7 +427,7 @@
       },
       {
         "seq": 29,
-        "elapsed_ms": 92.558,
+        "elapsed_ms": 74.834,
         "kind": "TOOL_FINISHED",
         "stage": "investigation",
         "hit_id": "H2",
@@ -438,11 +438,11 @@
           "fact_count": 1,
           "document_count": 0
         },
-        "duration_ms": 14.549
+        "duration_ms": 15.158
       },
       {
         "seq": 30,
-        "elapsed_ms": 92.585,
+        "elapsed_ms": 74.861,
         "kind": "FACTS_RECEIVED",
         "stage": "evidence",
         "hit_id": "H2",
@@ -457,7 +457,7 @@
       },
       {
         "seq": 31,
-        "elapsed_ms": 92.638,
+        "elapsed_ms": 74.911,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H2",
@@ -471,11 +471,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.04
+        "duration_ms": 0.038
       },
       {
         "seq": 32,
-        "elapsed_ms": 92.654,
+        "elapsed_ms": 74.928,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -489,7 +489,7 @@
       },
       {
         "seq": 33,
-        "elapsed_ms": 92.674,
+        "elapsed_ms": 74.951,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -505,7 +505,7 @@
       },
       {
         "seq": 34,
-        "elapsed_ms": 98.859,
+        "elapsed_ms": 79.605,
         "kind": "TOOL_FINISHED",
         "stage": "investigation",
         "hit_id": "H1",
@@ -516,11 +516,11 @@
           "fact_count": 1,
           "document_count": 0
         },
-        "duration_ms": 16.182
+        "duration_ms": 14.619
       },
       {
         "seq": 35,
-        "elapsed_ms": 98.905,
+        "elapsed_ms": 79.629,
         "kind": "FACTS_RECEIVED",
         "stage": "evidence",
         "hit_id": "H1",
@@ -535,7 +535,7 @@
       },
       {
         "seq": 36,
-        "elapsed_ms": 99.005,
+        "elapsed_ms": 79.682,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H1",
@@ -551,11 +551,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.078
+        "duration_ms": 0.041
       },
       {
         "seq": 37,
-        "elapsed_ms": 99.044,
+        "elapsed_ms": 79.705,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H1",
@@ -570,7 +570,7 @@
       },
       {
         "seq": 38,
-        "elapsed_ms": 99.082,
+        "elapsed_ms": 79.724,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H1",
@@ -586,7 +586,7 @@
       },
       {
         "seq": 39,
-        "elapsed_ms": 104.603,
+        "elapsed_ms": 84.074,
         "kind": "TOOL_FINISHED",
         "stage": "investigation",
         "hit_id": "H3",
@@ -597,11 +597,11 @@
           "fact_count": 1,
           "document_count": 0
         },
-        "duration_ms": 17.11
+        "duration_ms": 14.389
       },
       {
         "seq": 40,
-        "elapsed_ms": 104.648,
+        "elapsed_ms": 84.089,
         "kind": "FACTS_RECEIVED",
         "stage": "evidence",
         "hit_id": "H3",
@@ -616,7 +616,7 @@
       },
       {
         "seq": 41,
-        "elapsed_ms": 104.784,
+        "elapsed_ms": 84.149,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H3",
@@ -633,11 +633,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.114
+        "duration_ms": 0.052
       },
       {
         "seq": 42,
-        "elapsed_ms": 104.818,
+        "elapsed_ms": 84.165,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -652,7 +652,7 @@
       },
       {
         "seq": 43,
-        "elapsed_ms": 104.855,
+        "elapsed_ms": 84.178,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H3",
@@ -669,7 +669,7 @@
       },
       {
         "seq": 44,
-        "elapsed_ms": 110.405,
+        "elapsed_ms": 88.703,
         "kind": "TOOL_AUTHORIZED",
         "stage": "policy",
         "hit_id": "H2",
@@ -679,11 +679,11 @@
           "action_key": "model:SYN-WB-CAPTURE-001:H2",
           "allowed": true
         },
-        "duration_ms": 17.677
+        "duration_ms": 13.723
       },
       {
         "seq": 45,
-        "elapsed_ms": 110.414,
+        "elapsed_ms": 88.706,
         "kind": "TOOL_STARTED",
         "stage": "investigation",
         "hit_id": "H2",
@@ -697,7 +697,7 @@
       },
       {
         "seq": 46,
-        "elapsed_ms": 127.392,
+        "elapsed_ms": 105.65,
         "kind": "TOOL_FINISHED",
         "stage": "investigation",
         "hit_id": "H2",
@@ -708,11 +708,11 @@
           "fact_count": 2,
           "document_count": 0
         },
-        "duration_ms": 16.96
+        "duration_ms": 16.932
       },
       {
         "seq": 47,
-        "elapsed_ms": 127.442,
+        "elapsed_ms": 105.681,
         "kind": "FACTS_RECEIVED",
         "stage": "evidence",
         "hit_id": "H2",
@@ -728,7 +728,7 @@
       },
       {
         "seq": 48,
-        "elapsed_ms": 127.526,
+        "elapsed_ms": 105.754,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H2",
@@ -742,11 +742,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.064
+        "duration_ms": 0.06
       },
       {
         "seq": 49,
-        "elapsed_ms": 127.553,
+        "elapsed_ms": 105.772,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -760,7 +760,7 @@
       },
       {
         "seq": 50,
-        "elapsed_ms": 127.588,
+        "elapsed_ms": 105.796,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -776,7 +776,7 @@
       },
       {
         "seq": 51,
-        "elapsed_ms": 132.882,
+        "elapsed_ms": 111.034,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H1",
@@ -789,7 +789,7 @@
       },
       {
         "seq": 52,
-        "elapsed_ms": 138.532,
+        "elapsed_ms": 115.222,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -802,7 +802,7 @@
       },
       {
         "seq": 53,
-        "elapsed_ms": 169.351,
+        "elapsed_ms": 135.17,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H2",
@@ -818,7 +818,7 @@
       },
       {
         "seq": 54,
-        "elapsed_ms": 169.389,
+        "elapsed_ms": 135.21,
         "kind": "SUSPICION_EVALUATED",
         "stage": "suspicion",
         "hit_id": "H2",
@@ -826,11 +826,11 @@
         "details": {
           "score_available": false
         },
-        "duration_ms": 0.028
+        "duration_ms": 0.03
       },
       {
         "seq": 55,
-        "elapsed_ms": 174.291,
+        "elapsed_ms": 138.977,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H1",
@@ -845,7 +845,7 @@
       },
       {
         "seq": 56,
-        "elapsed_ms": 174.297,
+        "elapsed_ms": 138.982,
         "kind": "TOOL_FINISHED",
         "stage": "disposition",
         "hit_id": "H1",
@@ -855,11 +855,11 @@
           "action": "write_draft",
           "report_recommended": false
         },
-        "duration_ms": 75.112
+        "duration_ms": 59.196
       },
       {
         "seq": 57,
-        "elapsed_ms": 174.3,
+        "elapsed_ms": 138.985,
         "kind": "HIT_FINISHED",
         "stage": "orchestrator",
         "hit_id": "H1",
@@ -869,11 +869,11 @@
           "identity": "excluded_candidate",
           "recommendation": "EXCLUSION_CANDIDATE"
         },
-        "duration_ms": 173.966
+        "duration_ms": 138.799
       },
       {
         "seq": 58,
-        "elapsed_ms": 174.467,
+        "elapsed_ms": 139.161,
         "kind": "HIT_RESULT_READY",
         "stage": "orchestrator",
         "hit_id": "H1",
@@ -1140,7 +1140,7 @@
       },
       {
         "seq": 59,
-        "elapsed_ms": 179.592,
+        "elapsed_ms": 144.191,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H3",
@@ -1155,7 +1155,7 @@
       },
       {
         "seq": 60,
-        "elapsed_ms": 179.599,
+        "elapsed_ms": 144.201,
         "kind": "TOOL_FINISHED",
         "stage": "disposition",
         "hit_id": "H3",
@@ -1165,11 +1165,11 @@
           "action": "write_draft",
           "report_recommended": true
         },
-        "duration_ms": 74.643
+        "duration_ms": 59.976
       },
       {
         "seq": 61,
-        "elapsed_ms": 179.603,
+        "elapsed_ms": 144.204,
         "kind": "HIT_FINISHED",
         "stage": "orchestrator",
         "hit_id": "H3",
@@ -1179,11 +1179,11 @@
           "identity": "strong_link",
           "recommendation": "SUSPECTED_HIT_REPORT_DRAFT"
         },
-        "duration_ms": 178.836
+        "duration_ms": 143.746
       },
       {
         "seq": 62,
-        "elapsed_ms": 179.743,
+        "elapsed_ms": 144.37,
         "kind": "HIT_RESULT_READY",
         "stage": "orchestrator",
         "hit_id": "H3",
@@ -1462,7 +1462,7 @@
       },
       {
         "seq": 63,
-        "elapsed_ms": 186.439,
+        "elapsed_ms": 150.999,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -1475,7 +1475,7 @@
       },
       {
         "seq": 64,
-        "elapsed_ms": 198.177,
+        "elapsed_ms": 163.403,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H2",
@@ -1490,7 +1490,7 @@
       },
       {
         "seq": 65,
-        "elapsed_ms": 198.183,
+        "elapsed_ms": 163.411,
         "kind": "TOOL_FINISHED",
         "stage": "disposition",
         "hit_id": "H2",
@@ -1500,11 +1500,11 @@
           "action": "write_draft",
           "report_recommended": false
         },
-        "duration_ms": 28.739
+        "duration_ms": 28.145
       },
       {
         "seq": 66,
-        "elapsed_ms": 198.187,
+        "elapsed_ms": 163.415,
         "kind": "HIT_FINISHED",
         "stage": "orchestrator",
         "hit_id": "H2",
@@ -1514,11 +1514,11 @@
           "identity": "unresolved",
           "recommendation": "INSUFFICIENT_EVIDENCE_RECORDED"
         },
-        "duration_ms": 197.628
+        "duration_ms": 163.095
       },
       {
         "seq": 67,
-        "elapsed_ms": 198.361,
+        "elapsed_ms": 163.595,
         "kind": "HIT_RESULT_READY",
         "stage": "orchestrator",
         "hit_id": "H2",
@@ -1880,7 +1880,7 @@
       },
       {
         "seq": 68,
-        "elapsed_ms": 198.506,
+        "elapsed_ms": 163.721,
         "kind": "CASE_FINISHED",
         "stage": "orchestrator",
         "hit_id": null,
@@ -1888,12 +1888,12 @@
         "details": {
           "hits": 3
         },
-        "duration_ms": 198.41
+        "duration_ms": 163.667
       }
     ],
     "stats": {
       "hits": 3,
-      "elapsed_ms": 198.41,
+      "elapsed_ms": 163.667,
       "fixture_source_reads": 0,
       "capture_tool_reads": {
         "workbuddy_browser_readonly": 3,
@@ -2475,6 +2475,11 @@
       "engine_ms": 15922.158,
       "wall_ms": 15942.572,
       "mean_engine_ms_per_hit": 103.391,
+      "mean_single_hit_ms": 394.863,
+      "sum_single_hit_durations_ms": 60808.866,
+      "wall_ms_all_cases_start_together": 9290.271,
+      "wall_ms_shared_4_worker_pool": 15202.217,
+      "speedup_large_case": 3.97,
       "capture_tool_reads": {
         "workbuddy_browser_readonly": 154,
         "workbuddy_llm_capture": 16
@@ -2486,7 +2491,7 @@
       "automatic_clearances": 0,
       "note": "授权内部环境的聚合计数；不含任何业务字段、工单号或日志正文。"
     },
-    "tests_passed": 218,
+    "tests_passed": 219,
     "tests_note": "全量离线回归测试通过（见 README）"
   }
 }

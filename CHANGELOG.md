@@ -1,3 +1,11 @@
+## V0.9.5 — Concurrency semantics corrected (m subjects start together)
+
+- **The published timing model was wrong.** `Orchestrator.stats.elapsed_ms` is the whole-case wall clock *after* the 4-worker `ThreadPoolExecutor`, not the sum of per-hit work. The authorized runner also read `HIT_FINISHED.duration_ms` from `details` instead of the event's top-level field, producing 154 nulls. As a result the demo treated the post-parallel share `103.391 ms` as if it were one hit's cost, divided by 4 a second time (double-counted speedup), and labelled the serial sum of eight case wall clocks as "parallel wall time".
+- Recomputed from the real event logs: **one hit costs 394.863 ms on average** (median 389.985 ms, 60,808.866 ms total work); a 49-hit case reaches **3.93x** and an 88-hit case **3.97x** with 4 workers; the eight cases were actually run **one after another** for a cumulative 15,922.158 ms wall clock; `103.391 ms/hit` is only `15922.158 / 154`, i.e. the amortised wall share.
+- Three explicit wall-clock figures now coexist in the demo data: `wall_ms_all_cases_together` (8 subjects start together, 4 workers each = 32 concurrent, wall = slowest case ≈ 9.3 s), `wall_ms_shared_pool` (one shared 4-worker pool ≈ 15.2 s) and `wall_ms_serial_cases` (authorized local measurement ≈ 15.9 s). The page explains why one hit's duration can never finish 154 hits with finite workers.
+- Demo animation now starts all 8 cards at t=0 with per-case duration proportional to that case's own wall clock, and per-hit stages advance in waves of 4 instead of one by one. `stage_ms` is derived from each hit's duration so the 5-stage bar is internally consistent.
+- Schema bumped to `ln-agent-demo-workbench/1.1`; `tests/test_public_demo.py` adds a concurrency-model test. README / CHANGELOG / AGENTS / WORKBENCH / examples README and the replay's aggregate notice now distinguish single-hit cost from amortised wall share. **219 tests passing.**
+
 ## V0.9.4 — Checklist-level public demo workbench + real-run data fixes
 
 ### New public demo (`demo.html`, now the Pages entry)
