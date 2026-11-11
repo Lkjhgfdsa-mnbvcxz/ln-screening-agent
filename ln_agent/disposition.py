@@ -115,12 +115,25 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
     else:
         recommendation = "INSUFFICIENT_EVIDENCE_RECORDED"
 
+    # These are the ONLY business conclusion labels. None is intentionally
+    # non-conclusive: an unresolved, blocked or source-conflicted identity may
+    # not be silently reclassified as 未命中. All conclusions are DRAFTS until
+    # an authorised disposition workflow explicitly accepts them.
+    if candidate_exclusion and not mandatory:
+        business_conclusion = "未命中"
+    elif strong_link and not candidate_exclusion:
+        business_conclusion = "命中"
+    elif report and not candidate_exclusion:
+        business_conclusion = "疑似命中"
+    else:
+        business_conclusion = None
+
     anchor_refs = list(dict.fromkeys([x for x in evidence_refs if x] + event_refs))
     parts = matches[:3] + differences[:2]
     facts_sentence = "，".join(parts) if parts else "现有身份信息不足以确认关联"
     # Compose from verified comparison labels; free-form claims are source-attributed.
     if recommendation == "EXCLUSION_CANDIDATE":
-        internal = f"【{risk_type}】排除候选：{facts_sentence}；依据待按政策确认。"
+        internal = f"未命中【{risk_type}】：{facts_sentence}；排除依据待确认。"
     elif recommendation == "SUSPECTED_HIT_REPORT_DRAFT":
         if candidate_exclusion and mandatory:
             internal = (f"【{risk_type}】需合规复核：{facts_sentence}；已有排除候选证据，"
@@ -128,7 +141,7 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
         else:
             # An exact registry/document match supports stronger wording;
             # otherwise the message must explicitly remain a suspicion.
-            lead = "疑似真实命中" if strong_link else "疑似命中"
+            lead = "命中" if business_conclusion == "命中" else "疑似命中"
             internal = f"{lead}【{risk_type}】：{facts_sentence}。"
             if risk_summary:
                 internal += f"事由：{risk_summary}。"
@@ -164,7 +177,10 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
             report_message += f"\n复核链接：{review_url}"
     # Draft recommendation isn't an automatic report or a manual research queue.
     return {
-        "recommendation": recommendation,
+        "recommendation": recommendation,  # legacy technical disposition path
+        "business_conclusion": business_conclusion,
+        "business_conclusion_status": "DRAFT_NOT_APPROVED" if business_conclusion else "NO_CONCLUSION",
+        "conclusion_source": "AGENT_EVIDENCE_RULES",
         "identity_status": identity,
         "report_recommended": report,
         "manual_queue_required": any_category(hit.category, policy.mandatory_human_queue_categories),

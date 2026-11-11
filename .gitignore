@@ -28,4 +28,6 @@ report.json
 *.tmp
 # Local workbench event history, contains trace records; never push
 .local/
+
+# CI workflow omitted: publishing token lacks workflow scope
 .github/

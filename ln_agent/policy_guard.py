@@ -133,6 +133,19 @@ class PolicyGuard:
         for key in skill["required_output_fields"]:
             if key not in disposition:
                 raise PolicyViolation(f"disposition missing required field: {key}")
+        business = disposition.get("business_conclusion")
+        if business not in {None, "未命中", "疑似命中", "命中"}:
+            raise PolicyViolation("business conclusion must be one of exactly three labels or null")
+        if disposition.get("business_conclusion_status") != (
+            "DRAFT_NOT_APPROVED" if business else "NO_CONCLUSION"
+        ):
+            raise PolicyViolation("business conclusion must carry its draft/unresolved state")
+        if business == "未命中" and disposition.get("recommendation") != "EXCLUSION_CANDIDATE":
+            raise PolicyViolation("unverified no-hit conclusion")
+        if business == "命中" and disposition.get("identity_status") != "strong_link":
+            raise PolicyViolation("unverified confirmed-hit conclusion")
+        if business == "疑似命中" and not disposition.get("report_recommended"):
+            raise PolicyViolation("suspected hit requires supported report recommendation")
         if not isinstance(disposition["internal_note"], str) or not disposition["internal_note"].strip():
             raise PolicyViolation("disposition requires concise internal note")
         if disposition.get("automatically_sent") or disposition.get("automatically_cleared"):

@@ -41,7 +41,7 @@ class TestConciseDisposition(unittest.TestCase):
         self.assertTrue(d["report_recommended"])
         for term in ("姓名一致", "出生日期一致", "证件号码一致", "居住地址不一致", "扣押"):
             self.assertIn(term,d["internal_note"])
-        self.assertIn("疑似真实命中",d["internal_note"])
+        self.assertIn("命中【",d["internal_note"])
         self.assertLess(len(d["internal_note"]),140)
         self.assertIn("复核链接：https://example.invalid",d["compliance_message"])
 
@@ -98,7 +98,7 @@ class TestConciseDisposition(unittest.TestCase):
     def test_exclusion_candidate_not_recast_as_hit(self):
         d=run_fixture("case_false_positive.json")["disposition"]
         self.assertFalse(d["report_recommended"])
-        self.assertIn("排除候选",d["internal_note"])
+        self.assertIn("未命中【",d["internal_note"])
         self.assertIn("出生日期不同",d["internal_note"])
 
     def test_mandatory_gate_overrides_exclusion_but_not_exclusion_evidence(self):

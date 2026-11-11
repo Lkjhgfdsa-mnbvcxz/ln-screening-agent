@@ -11,7 +11,7 @@
     RULE_EVALUATED: '规则引擎判断', RULE_REGISTRY_CHECK: '规则注册表检查',
     TOOL_AUTHORIZED: '工具调用授权', TOOL_STARTED: '调查工具启动',
     TOOL_FINISHED: '调查工具完成', FACTS_RECEIVED: '新增事实候选',
-    FACT_VERIFICATION: '事实核实结果', SUSPICION_EVALUATED: '残余可疑度评估',
+    FACT_VERIFICATION: '事实核实结果', SUSPICION_EVALUATED: '疑似命中条件评估',
     HIT_FINISHED: '命中处理完成', HIT_RESULT_READY: '结论已就绪',
     CASE_STARTED: '工单开始', CASE_FINISHED: '工单完成',
     PRIOR_REVIEW_READ: '读取历史审核记录（仅展示）',
@@ -19,7 +19,7 @@
   };
   const stageNames = { orchestrator:'调度', skill:'Skill', policy:'Policy',
     risk_gate:'风险闸门', rule_engine:'规则引擎', investigation:'调查工具',
-    disposition:'说明生成', suspicion:'可疑度', evidence:'证据',
+    disposition:'说明生成', suspicion:'内部风险计算', evidence:'证据',
     prior_review:'历史审核', other:'其他' };
   const statusNames = { completed:'已完成', running:'运行中', failed:'运行失败' };
   const fmt = (n) => typeof n === 'number' ? (n < 1 ? n.toFixed(3) : n.toFixed(1))+' ms' : '—';
@@ -59,7 +59,7 @@
       else if (event.kind === 'TOOL_STARTED') h.phase='调查工具运行中';
       else if (event.kind === 'RULE_EVALUATED') h.phase='规则引擎已判断';
       else if (event.kind === 'FACT_VERIFICATION') h.phase='核实资料来源';
-      else if (event.kind === 'SUSPICION_EVALUATED') h.phase='残余可疑度已评估';
+      else if (event.kind === 'SUSPICION_EVALUATED') h.phase='内部关联与风险判断已完成';
       app.hitState[event.hit_id] = h;
     }
     scheduleRender();
@@ -83,7 +83,8 @@
       const btn=node('button','hit'+(app.selected===hitId?' active':''));
       btn.type='button'; btn.onclick=()=>{app.selected=hitId; scheduleRender();};
       const left=node('div');
-      add(left,node('strong','',hitId),node('small','',decision?.route || h.phase));
+      const conclusion=decision?.disposition?.business_conclusion;
+      add(left,node('strong','',hitId),node('small',conclusion?'business-text':'',conclusion || (decision?'尚未形成业务结论':h.phase)));
       const right=node('div','hit-right');
       add(right,node('span','dot '+(h.state==='done'?'done':h.state==='running'?'running':'')),
         node('span','small-status',h.state==='done'?'已完成':h.state==='running'?'运行中':'等待中'));
@@ -103,21 +104,41 @@
     if(!app.selected) return noData(container,'点击左侧命中查看详情。');
     if(!decision) return noData(container,stateFor(app.selected).phase+' · 等待该命中完成');
     const disp=decision.disposition || {}; const root=node('div','detail-body');
-    detailLine(root,'身份判断 / 运行路径',(decision.route || '—')+' · '+(decision.identity || '—'),'route');
+    const outcome=disp.business_conclusion;
+    const outcomePanel=node('section','business-result');
+    const outcomeHeader=node('div','outcome-top');
+    add(outcomeHeader,node('span','outcome-caption','业务结论（Agent 草稿）'),
+      node('span','business-badge '+(outcome==='未命中'?'no-hit':outcome==='命中'?'hit-yes':outcome==='疑似命中'?'suspected':'none'),
+        outcome || '—'));
+    outcomePanel.appendChild(outcomeHeader);
+    outcomePanel.appendChild(node('small','conclusion-hint',
+      outcome ? '尚未经业务审批，不会自动写回 LN。' : '证据或处理条件不足，暂不生成结论；不能据此判为未命中。'));
+    root.appendChild(outcomePanel);
     detailLine(root,'内部审核说明',disp.internal_note || '尚无说明','notice');
-    if(disp.report_recommended) detailLine(root,'疑似命中上报草稿',disp.compliance_message || '待生成','notice');
-    detailLine(root,'处置建议 / 风险',
-      (disp.recommendation || '—')+' · 上报草稿：'+(disp.report_recommended?'是':'否')+' · 人工调查队列：'+(disp.manual_queue_required?'是':'否'));
-    detailLine(root,'核心判断依据',(decision.reasons || []).join('；') || '无');
-    detailLine(root,'规则与证据',
-      '规则：'+(decision.rule_findings || []).map(x=>x.rule_id).slice(0,6).join('、')+ '\n来源：'+(disp.source_refs || []).slice(0,8).join('、'));
+    if(disp.report_recommended) detailLine(root,'合规沟通草稿（尚未发送）',disp.compliance_message || '待生成','notice');
     const comparison=snap?.prior_comparisons?.[app.selected];
-    if(comparison) detailLine(root,'已有人工结论（导入且未鉴真，不覆盖）',
-      (comparison.prior?.conclusion || '')+' · '+(comparison.comparison || '')+
-      '\n记录：'+(comparison.prior?.recorded_at || '')+' · '+(comparison.prior?.source_ref || ''),'notice prior');
+    if(comparison) {
+      const priorLabels={true_hit:'命中',false_positive:'未命中',suspected_hit:'疑似命中'};
+      const priorLabel=priorLabels[comparison.prior?.conclusion] || '未记录业务结论';
+      const relationLabels={DIRECTIONALLY_CONSISTENT:'与本次建议方向一致',POTENTIAL_CONFLICT_REQUIRES_SOURCE_RECHECK:'与本次建议存在差异',NOT_COMPARABLE_OR_UNRESOLVED:'当前无法直接比较'};
+      detailLine(root,'历史审核记录（独立保留，不作为本轮证据）',
+        priorLabel+' · '+(relationLabels[comparison.comparison] || '待核对')+
+        '\n记录：'+(comparison.prior?.recorded_at || '')+' · '+(comparison.prior?.source_ref || ''),'notice prior');
+    }
     const matching=app.events.filter(x=>x.hit_id===app.selected);
-    detailLine(root,'实际执行记录',matching.map(x=> (title[x.kind]||x.kind)+
+    const technical=node('details','technical-details');
+    technical.appendChild(node('summary','','查看证据来源与执行细节'));
+    detailLine(technical,'身份判断 / 内部路由', (decision.identity || '—')+' · '+(decision.route || '—'));
+    detailLine(technical,'触发规则与来源',
+      '规则：'+(decision.rule_findings || []).map(x=>x.rule_id).slice(0,6).join('、')+
+      '\n来源：'+(disp.source_refs || []).slice(0,8).join('、'));
+    detailLine(technical,'底层判断依据',(decision.reasons || []).join('；') || '无');
+    detailLine(technical,'技术处置状态',
+      (disp.recommendation || '—')+' · 建议上报：'+(disp.report_recommended?'是':'否')+
+      ' · 人工调查队列：'+(disp.manual_queue_required?'是':'否'));
+    detailLine(technical,'实际执行记录',matching.map(x=> (title[x.kind]||x.kind)+
       (x.duration_ms!==undefined?' ('+fmt(x.duration_ms)+')':'' )).join(' → ') || '—');
+    root.appendChild(technical);
     container.replaceChildren(root); container.classList.remove('empty');
   }
   function renderTimeline() {

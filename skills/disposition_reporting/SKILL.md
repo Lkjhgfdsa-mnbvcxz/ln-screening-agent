@@ -18,3 +18,7 @@
 
 ## 可复现接口
 `ln_agent.disposition.build_disposition(...)` 生成文案；`PolicyGuard.validate_disposition_draft(...)` 强制检查输出契约；`DecisionRouter.finish` 在返回 Decision 之前执行。
+
+## 业务结论与技术状态
+
+业务展示只使用 **未命中 / 疑似命中 / 命中**。技术路由（例如 `RESIDUAL_SUSPICION`）不得作为业务结论。证据不足或工具异常且尚无依据形成结论时，`business_conclusion=null`，不自动判未命中。全部结论仅是草稿，需按授权政策处置。

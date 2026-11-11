@@ -1,3 +1,11 @@
+## V0.9.2 — Business outcomes in Web workbench
+
+- Business-facing conclusion is one of `未命中 / 疑似命中 / 命中` or null if not established; all are drafts.
+- Workbench list and detail now show the business outcome; route/debug state moved behind a disclosure panel.
+- Prior human dispositions are displayed in Chinese separately, never adopted as evidence.
+- JSON reporting and disposition skill contract carry the same business outcome and approval state.
+- Regression tests cover all outcomes, insufficient evidence, and guard constraints.
+
 ## V0.9.1 — Lean repository cleanup
 
 - Removed redundant legacy Git/merge documents, historical one-off demos and unneeded fixture-regenerator script.

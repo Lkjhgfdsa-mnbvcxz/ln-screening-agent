@@ -29,3 +29,5 @@ python3 -m unittest discover -s tests -v
 ```
 
 目前只有**合成离线数据**。候选上报权重和风险阈值未获得公司批准，不可直接用于生产自动处置。
+
+> V0.9.2：新增 `business_conclusion`（未命中 / 疑似命中 / 命中或 null）和 `business_conclusion_status`。旧 `recommendation` 继续保留为内部技术状态，不在业务结果区直接展示。
