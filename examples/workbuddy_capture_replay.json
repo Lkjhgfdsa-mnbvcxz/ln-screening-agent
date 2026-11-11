@@ -17,7 +17,7 @@
     "events": [
       {
         "seq": 1,
-        "elapsed_ms": 0.053,
+        "elapsed_ms": 0.099,
         "kind": "CASE_STARTED",
         "stage": "orchestrator",
         "hit_id": null,
@@ -30,7 +30,7 @@
       },
       {
         "seq": 2,
-        "elapsed_ms": 0.194,
+        "elapsed_ms": 0.34,
         "kind": "HIT_STARTED",
         "stage": "orchestrator",
         "hit_id": "H1",
@@ -44,7 +44,7 @@
       },
       {
         "seq": 3,
-        "elapsed_ms": 0.347,
+        "elapsed_ms": 0.562,
         "kind": "HIT_STARTED",
         "stage": "orchestrator",
         "hit_id": "H2",
@@ -58,7 +58,7 @@
       },
       {
         "seq": 4,
-        "elapsed_ms": 0.492,
+        "elapsed_ms": 0.77,
         "kind": "HIT_STARTED",
         "stage": "orchestrator",
         "hit_id": "H3",
@@ -72,7 +72,7 @@
       },
       {
         "seq": 5,
-        "elapsed_ms": 58.3,
+        "elapsed_ms": 61.933,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H2",
@@ -88,7 +88,7 @@
       },
       {
         "seq": 6,
-        "elapsed_ms": 58.328,
+        "elapsed_ms": 61.96,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -101,7 +101,7 @@
       },
       {
         "seq": 7,
-        "elapsed_ms": 58.559,
+        "elapsed_ms": 62.183,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -109,11 +109,11 @@
         "details": {
           "flags": []
         },
-        "duration_ms": 0.225
+        "duration_ms": 0.217
       },
       {
         "seq": 8,
-        "elapsed_ms": 58.774,
+        "elapsed_ms": 62.395,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H2",
@@ -127,11 +127,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.202
+        "duration_ms": 0.201
       },
       {
         "seq": 9,
-        "elapsed_ms": 58.796,
+        "elapsed_ms": 62.416,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -145,7 +145,7 @@
       },
       {
         "seq": 10,
-        "elapsed_ms": 58.818,
+        "elapsed_ms": 62.435,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -161,7 +161,96 @@
       },
       {
         "seq": 11,
-        "elapsed_ms": 58.978,
+        "elapsed_ms": 67.562,
+        "kind": "SKILL_SELECTED",
+        "stage": "skill",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "skill_ids": [
+            "SKILL_PERSON_LN_V1",
+            "SKILL_WORKBUDDY_CAPTURE_V1"
+          ],
+          "contract_applied": true
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 12,
+        "elapsed_ms": 67.577,
+        "kind": "POLICY_CHECK",
+        "stage": "policy",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "check": "ingest",
+          "allowed": true
+        },
+        "duration_ms": 0.009
+      },
+      {
+        "seq": 13,
+        "elapsed_ms": 67.591,
+        "kind": "GATE_CHECK",
+        "stage": "risk_gate",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "flags": []
+        },
+        "duration_ms": 0.011
+      },
+      {
+        "seq": 14,
+        "elapsed_ms": 67.63,
+        "kind": "RULE_EVALUATED",
+        "stage": "rule_engine",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "round": 1,
+          "exclusion_rules": [],
+          "linked_rules": [],
+          "soft_signals": [
+            "name_exact"
+          ],
+          "issue_count": 0
+        },
+        "duration_ms": 0.031
+      },
+      {
+        "seq": 15,
+        "elapsed_ms": 67.645,
+        "kind": "RULE_REGISTRY_CHECK",
+        "stage": "policy",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "rule_ids": [
+            "P01_NAME"
+          ]
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 16,
+        "elapsed_ms": 67.664,
+        "kind": "GATE_CHECK",
+        "stage": "risk_gate",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "flags": [
+            "SCREENING_ALERT_OBSERVED",
+            "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
+          ],
+          "escalation_required": false
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 17,
+        "elapsed_ms": 72.546,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H3",
@@ -176,8 +265,8 @@
         "duration_ms": null
       },
       {
-        "seq": 12,
-        "elapsed_ms": 58.992,
+        "seq": 18,
+        "elapsed_ms": 72.557,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -186,11 +275,11 @@
           "check": "ingest",
           "allowed": true
         },
-        "duration_ms": 0.007
+        "duration_ms": 0.006
       },
       {
-        "seq": 13,
-        "elapsed_ms": 59.008,
+        "seq": 19,
+        "elapsed_ms": 72.57,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H3",
@@ -200,11 +289,11 @@
             "SCREENING_REVIEW_REQUIRED"
           ]
         },
-        "duration_ms": 0.011
+        "duration_ms": 0.01
       },
       {
-        "seq": 14,
-        "elapsed_ms": 59.129,
+        "seq": 20,
+        "elapsed_ms": 72.691,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H3",
@@ -219,11 +308,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.113
+        "duration_ms": 0.115
       },
       {
-        "seq": 15,
-        "elapsed_ms": 59.144,
+        "seq": 21,
+        "elapsed_ms": 72.704,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -236,8 +325,8 @@
         "duration_ms": null
       },
       {
-        "seq": 16,
-        "elapsed_ms": 59.159,
+        "seq": 22,
+        "elapsed_ms": 72.716,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H3",
@@ -253,55 +342,128 @@
         "duration_ms": null
       },
       {
-        "seq": 17,
-        "elapsed_ms": 59.257,
-        "kind": "SKILL_SELECTED",
-        "stage": "skill",
-        "hit_id": "H1",
+        "seq": 23,
+        "elapsed_ms": 77.994,
+        "kind": "TOOL_AUTHORIZED",
+        "stage": "policy",
+        "hit_id": "H2",
         "status": "ok",
         "details": {
-          "skill_ids": [
-            "SKILL_PERSON_LN_V1",
-            "SKILL_WORKBUDDY_CAPTURE_V1"
-          ],
-          "contract_applied": true
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H2",
+          "allowed": true
+        },
+        "duration_ms": 15.516
+      },
+      {
+        "seq": 24,
+        "elapsed_ms": 77.998,
+        "kind": "TOOL_STARTED",
+        "stage": "investigation",
+        "hit_id": "H2",
+        "status": "ok",
+        "details": {
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H2",
+          "skill_id": "SKILL_PERSON_LN_V1"
         },
         "duration_ms": null
       },
       {
-        "seq": 18,
-        "elapsed_ms": 59.266,
-        "kind": "POLICY_CHECK",
+        "seq": 25,
+        "elapsed_ms": 82.656,
+        "kind": "TOOL_AUTHORIZED",
         "stage": "policy",
         "hit_id": "H1",
         "status": "ok",
         "details": {
-          "check": "ingest",
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H1",
           "allowed": true
         },
-        "duration_ms": 0.005
+        "duration_ms": 14.965
       },
       {
-        "seq": 19,
-        "elapsed_ms": 59.277,
-        "kind": "GATE_CHECK",
-        "stage": "risk_gate",
+        "seq": 26,
+        "elapsed_ms": 82.659,
+        "kind": "TOOL_STARTED",
+        "stage": "investigation",
         "hit_id": "H1",
         "status": "ok",
         "details": {
-          "flags": []
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H1",
+          "skill_id": "SKILL_PERSON_LN_V1"
         },
-        "duration_ms": 0.007
+        "duration_ms": null
       },
       {
-        "seq": 20,
-        "elapsed_ms": 59.307,
+        "seq": 27,
+        "elapsed_ms": 87.472,
+        "kind": "TOOL_AUTHORIZED",
+        "stage": "policy",
+        "hit_id": "H3",
+        "status": "ok",
+        "details": {
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H3",
+          "allowed": true
+        },
+        "duration_ms": 14.733
+      },
+      {
+        "seq": 28,
+        "elapsed_ms": 87.475,
+        "kind": "TOOL_STARTED",
+        "stage": "investigation",
+        "hit_id": "H3",
+        "status": "ok",
+        "details": {
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H3",
+          "skill_id": "SKILL_COMPANY_LN_V1"
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 29,
+        "elapsed_ms": 92.558,
+        "kind": "TOOL_FINISHED",
+        "stage": "investigation",
+        "hit_id": "H2",
+        "status": "ok",
+        "details": {
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H2",
+          "fact_count": 1,
+          "document_count": 0
+        },
+        "duration_ms": 14.549
+      },
+      {
+        "seq": 30,
+        "elapsed_ms": 92.585,
+        "kind": "FACTS_RECEIVED",
+        "stage": "evidence",
+        "hit_id": "H2",
+        "status": "ok",
+        "details": {
+          "candidates": 1,
+          "evidence_ids": [
+            "SYN-WB-CAPTURE-001:H2:ln:region"
+          ]
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 31,
+        "elapsed_ms": 92.638,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
-        "hit_id": "H1",
+        "hit_id": "H2",
         "status": "ok",
         "details": {
-          "round": 1,
+          "round": 2,
           "exclusion_rules": [],
           "linked_rules": [],
           "soft_signals": [
@@ -309,14 +471,14 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.025
+        "duration_ms": 0.04
       },
       {
-        "seq": 21,
-        "elapsed_ms": 59.317,
+        "seq": 32,
+        "elapsed_ms": 92.654,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
-        "hit_id": "H1",
+        "hit_id": "H2",
         "status": "ok",
         "details": {
           "rule_ids": [
@@ -326,8 +488,89 @@
         "duration_ms": null
       },
       {
-        "seq": 22,
-        "elapsed_ms": 59.328,
+        "seq": 33,
+        "elapsed_ms": 92.674,
+        "kind": "GATE_CHECK",
+        "stage": "risk_gate",
+        "hit_id": "H2",
+        "status": "ok",
+        "details": {
+          "flags": [
+            "SCREENING_ALERT_OBSERVED",
+            "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
+          ],
+          "escalation_required": false
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 34,
+        "elapsed_ms": 98.859,
+        "kind": "TOOL_FINISHED",
+        "stage": "investigation",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "tool": "workbuddy_browser_readonly",
+          "action_key": "boss:SYN-WB-CAPTURE-001:H1",
+          "fact_count": 1,
+          "document_count": 0
+        },
+        "duration_ms": 16.182
+      },
+      {
+        "seq": 35,
+        "elapsed_ms": 98.905,
+        "kind": "FACTS_RECEIVED",
+        "stage": "evidence",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "candidates": 1,
+          "evidence_ids": [
+            "SYN-WB-CAPTURE-001:H1:ln:dob"
+          ]
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 36,
+        "elapsed_ms": 99.005,
+        "kind": "RULE_EVALUATED",
+        "stage": "rule_engine",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "round": 2,
+          "exclusion_rules": [
+            "DOB_EXACT_CONFLICT"
+          ],
+          "linked_rules": [],
+          "soft_signals": [
+            "name_exact"
+          ],
+          "issue_count": 0
+        },
+        "duration_ms": 0.078
+      },
+      {
+        "seq": 37,
+        "elapsed_ms": 99.044,
+        "kind": "RULE_REGISTRY_CHECK",
+        "stage": "policy",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "rule_ids": [
+            "P01_NAME",
+            "P02_COMPLETE_DOB"
+          ]
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 38,
+        "elapsed_ms": 99.082,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H1",
@@ -342,92 +585,8 @@
         "duration_ms": null
       },
       {
-        "seq": 23,
-        "elapsed_ms": 79.884,
-        "kind": "TOOL_AUTHORIZED",
-        "stage": "policy",
-        "hit_id": "H3",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H3",
-          "allowed": true
-        },
-        "duration_ms": 20.691
-      },
-      {
-        "seq": 24,
-        "elapsed_ms": 79.89,
-        "kind": "TOOL_STARTED",
-        "stage": "investigation",
-        "hit_id": "H3",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H3",
-          "skill_id": "SKILL_COMPANY_LN_V1"
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 25,
-        "elapsed_ms": 80.09,
-        "kind": "TOOL_AUTHORIZED",
-        "stage": "policy",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H1",
-          "allowed": true
-        },
-        "duration_ms": 20.739
-      },
-      {
-        "seq": 26,
-        "elapsed_ms": 80.093,
-        "kind": "TOOL_STARTED",
-        "stage": "investigation",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H1",
-          "skill_id": "SKILL_PERSON_LN_V1"
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 27,
-        "elapsed_ms": 80.205,
-        "kind": "TOOL_AUTHORIZED",
-        "stage": "policy",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H2",
-          "allowed": true
-        },
-        "duration_ms": 21.35
-      },
-      {
-        "seq": 28,
-        "elapsed_ms": 80.209,
-        "kind": "TOOL_STARTED",
-        "stage": "investigation",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H2",
-          "skill_id": "SKILL_PERSON_LN_V1"
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 29,
-        "elapsed_ms": 98.818,
+        "seq": 39,
+        "elapsed_ms": 104.603,
         "kind": "TOOL_FINISHED",
         "stage": "investigation",
         "hit_id": "H3",
@@ -438,11 +597,11 @@
           "fact_count": 1,
           "document_count": 0
         },
-        "duration_ms": 18.917
+        "duration_ms": 17.11
       },
       {
-        "seq": 30,
-        "elapsed_ms": 98.845,
+        "seq": 40,
+        "elapsed_ms": 104.648,
         "kind": "FACTS_RECEIVED",
         "stage": "evidence",
         "hit_id": "H3",
@@ -456,8 +615,8 @@
         "duration_ms": null
       },
       {
-        "seq": 31,
-        "elapsed_ms": 98.922,
+        "seq": 41,
+        "elapsed_ms": 104.784,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H3",
@@ -474,11 +633,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.064
+        "duration_ms": 0.114
       },
       {
-        "seq": 32,
-        "elapsed_ms": 98.94,
+        "seq": 42,
+        "elapsed_ms": 104.818,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H3",
@@ -492,8 +651,8 @@
         "duration_ms": null
       },
       {
-        "seq": 33,
-        "elapsed_ms": 98.96,
+        "seq": 43,
+        "elapsed_ms": 104.855,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H3",
@@ -509,167 +668,8 @@
         "duration_ms": null
       },
       {
-        "seq": 34,
-        "elapsed_ms": 100.241,
-        "kind": "TOOL_FINISHED",
-        "stage": "investigation",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H1",
-          "fact_count": 1,
-          "document_count": 0
-        },
-        "duration_ms": 20.142
-      },
-      {
-        "seq": 35,
-        "elapsed_ms": 100.259,
-        "kind": "FACTS_RECEIVED",
-        "stage": "evidence",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "candidates": 1,
-          "evidence_ids": [
-            "SYN-WB-CAPTURE-001:H1:ln:dob"
-          ]
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 36,
-        "elapsed_ms": 100.305,
-        "kind": "RULE_EVALUATED",
-        "stage": "rule_engine",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "round": 2,
-          "exclusion_rules": [
-            "DOB_EXACT_CONFLICT"
-          ],
-          "linked_rules": [],
-          "soft_signals": [
-            "name_exact"
-          ],
-          "issue_count": 0
-        },
-        "duration_ms": 0.036
-      },
-      {
-        "seq": 37,
-        "elapsed_ms": 100.319,
-        "kind": "RULE_REGISTRY_CHECK",
-        "stage": "policy",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "rule_ids": [
-            "P01_NAME",
-            "P02_COMPLETE_DOB"
-          ]
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 38,
-        "elapsed_ms": 100.335,
-        "kind": "GATE_CHECK",
-        "stage": "risk_gate",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "flags": [
-            "SCREENING_ALERT_OBSERVED",
-            "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
-          ],
-          "escalation_required": false
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 39,
-        "elapsed_ms": 100.546,
-        "kind": "TOOL_FINISHED",
-        "stage": "investigation",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "tool": "workbuddy_browser_readonly",
-          "action_key": "boss:SYN-WB-CAPTURE-001:H2",
-          "fact_count": 1,
-          "document_count": 0
-        },
-        "duration_ms": 20.333
-      },
-      {
-        "seq": 40,
-        "elapsed_ms": 100.56,
-        "kind": "FACTS_RECEIVED",
-        "stage": "evidence",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "candidates": 1,
-          "evidence_ids": [
-            "SYN-WB-CAPTURE-001:H2:ln:region"
-          ]
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 41,
-        "elapsed_ms": 100.592,
-        "kind": "RULE_EVALUATED",
-        "stage": "rule_engine",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "round": 2,
-          "exclusion_rules": [],
-          "linked_rules": [],
-          "soft_signals": [
-            "name_exact"
-          ],
-          "issue_count": 0
-        },
-        "duration_ms": 0.025
-      },
-      {
-        "seq": 42,
-        "elapsed_ms": 100.604,
-        "kind": "RULE_REGISTRY_CHECK",
-        "stage": "policy",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "rule_ids": [
-            "P01_NAME"
-          ]
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 43,
-        "elapsed_ms": 100.621,
-        "kind": "GATE_CHECK",
-        "stage": "risk_gate",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "flags": [
-            "SCREENING_ALERT_OBSERVED",
-            "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
-          ],
-          "escalation_required": false
-        },
-        "duration_ms": null
-      },
-      {
         "seq": 44,
-        "elapsed_ms": 119.0,
+        "elapsed_ms": 110.405,
         "kind": "TOOL_AUTHORIZED",
         "stage": "policy",
         "hit_id": "H2",
@@ -679,11 +679,11 @@
           "action_key": "model:SYN-WB-CAPTURE-001:H2",
           "allowed": true
         },
-        "duration_ms": 18.35
+        "duration_ms": 17.677
       },
       {
         "seq": 45,
-        "elapsed_ms": 119.01,
+        "elapsed_ms": 110.414,
         "kind": "TOOL_STARTED",
         "stage": "investigation",
         "hit_id": "H2",
@@ -697,33 +697,7 @@
       },
       {
         "seq": 46,
-        "elapsed_ms": 123.948,
-        "kind": "POLICY_CHECK",
-        "stage": "policy",
-        "hit_id": "H3",
-        "status": "ok",
-        "details": {
-          "check": "disposition",
-          "allowed": true
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 47,
-        "elapsed_ms": 128.526,
-        "kind": "POLICY_CHECK",
-        "stage": "policy",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "check": "disposition",
-          "allowed": true
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 48,
-        "elapsed_ms": 133.17,
+        "elapsed_ms": 127.392,
         "kind": "TOOL_FINISHED",
         "stage": "investigation",
         "hit_id": "H2",
@@ -734,11 +708,11 @@
           "fact_count": 2,
           "document_count": 0
         },
-        "duration_ms": 14.151
+        "duration_ms": 16.96
       },
       {
-        "seq": 49,
-        "elapsed_ms": 133.197,
+        "seq": 47,
+        "elapsed_ms": 127.442,
         "kind": "FACTS_RECEIVED",
         "stage": "evidence",
         "hit_id": "H2",
@@ -753,8 +727,8 @@
         "duration_ms": null
       },
       {
-        "seq": 50,
-        "elapsed_ms": 133.249,
+        "seq": 48,
+        "elapsed_ms": 127.526,
         "kind": "RULE_EVALUATED",
         "stage": "rule_engine",
         "hit_id": "H2",
@@ -768,11 +742,11 @@
           ],
           "issue_count": 0
         },
-        "duration_ms": 0.038
+        "duration_ms": 0.064
       },
       {
-        "seq": 51,
-        "elapsed_ms": 133.265,
+        "seq": 49,
+        "elapsed_ms": 127.553,
         "kind": "RULE_REGISTRY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -785,8 +759,8 @@
         "duration_ms": null
       },
       {
-        "seq": 52,
-        "elapsed_ms": 133.288,
+        "seq": 50,
+        "elapsed_ms": 127.588,
         "kind": "GATE_CHECK",
         "stage": "risk_gate",
         "hit_id": "H2",
@@ -801,8 +775,372 @@
         "duration_ms": null
       },
       {
+        "seq": 51,
+        "elapsed_ms": 132.882,
+        "kind": "POLICY_CHECK",
+        "stage": "policy",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "check": "disposition",
+          "allowed": true
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 52,
+        "elapsed_ms": 138.532,
+        "kind": "POLICY_CHECK",
+        "stage": "policy",
+        "hit_id": "H3",
+        "status": "ok",
+        "details": {
+          "check": "disposition",
+          "allowed": true
+        },
+        "duration_ms": null
+      },
+      {
         "seq": 53,
-        "elapsed_ms": 151.5,
+        "elapsed_ms": 169.351,
+        "kind": "SKILL_SELECTED",
+        "stage": "skill",
+        "hit_id": "H2",
+        "status": "ok",
+        "details": {
+          "skill_ids": [
+            "SKILL_PERSON_LN_V1",
+            "SKILL_RESIDUAL_SUSPICION_V1"
+          ],
+          "contract_applied": true
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 54,
+        "elapsed_ms": 169.389,
+        "kind": "SUSPICION_EVALUATED",
+        "stage": "suspicion",
+        "hit_id": "H2",
+        "status": "ok",
+        "details": {
+          "score_available": false
+        },
+        "duration_ms": 0.028
+      },
+      {
+        "seq": 55,
+        "elapsed_ms": 174.291,
+        "kind": "SKILL_SELECTED",
+        "stage": "skill",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "skill_ids": [
+            "SKILL_DISPOSITION_REPORTING_V1"
+          ],
+          "contract_applied": true
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 56,
+        "elapsed_ms": 174.297,
+        "kind": "TOOL_FINISHED",
+        "stage": "disposition",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "tool": "disposition_writer",
+          "action": "write_draft",
+          "report_recommended": false
+        },
+        "duration_ms": 75.112
+      },
+      {
+        "seq": 57,
+        "elapsed_ms": 174.3,
+        "kind": "HIT_FINISHED",
+        "stage": "orchestrator",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "route": "EXCLUSION_CANDIDATE",
+          "identity": "excluded_candidate",
+          "recommendation": "EXCLUSION_CANDIDATE"
+        },
+        "duration_ms": 173.966
+      },
+      {
+        "seq": 58,
+        "elapsed_ms": 174.467,
+        "kind": "HIT_RESULT_READY",
+        "stage": "orchestrator",
+        "hit_id": "H1",
+        "status": "ok",
+        "details": {
+          "decision": {
+            "hit_id": "H1",
+            "route": "EXCLUSION_CANDIDATE",
+            "identity": "excluded_candidate",
+            "suspicion": null,
+            "evidence": {
+              "exclusion_rules": [
+                "DOB_EXACT_CONFLICT"
+              ],
+              "linked_rules": [],
+              "soft_signals": [
+                "name_exact"
+              ],
+              "data_issues": [],
+              "anchors": [
+                "SYN-WB-CAPTURE-001:app:name",
+                "SYN-WB-CAPTURE-001:H1:ln:name",
+                "SYN-WB-CAPTURE-001:app:dob",
+                "SYN-WB-CAPTURE-001:H1:ln:dob"
+              ]
+            },
+            "reasons": [
+              "DOB_EXACT_CONFLICT"
+            ],
+            "actions": [
+              "RESEARCH_QUERY:boss:SYN-WB-CAPTURE-001:H1"
+            ],
+            "history": [
+              {
+                "step": 1,
+                "known_hit_facts": 1,
+                "checked_research_keys": [],
+                "applied_skill": "SKILL_PERSON_LN_V1",
+                "skill_bundle": [
+                  "SKILL_PERSON_LN_V1",
+                  "SKILL_WORKBUDDY_CAPTURE_V1"
+                ],
+                "exclusion_rules": [],
+                "linked_rules": [],
+                "data_issues": [],
+                "gate_flags": []
+              },
+              {
+                "step": 2,
+                "known_hit_facts": 2,
+                "checked_research_keys": [
+                  "boss:SYN-WB-CAPTURE-001:H1"
+                ],
+                "applied_skill": "SKILL_PERSON_LN_V1",
+                "skill_bundle": [
+                  "SKILL_PERSON_LN_V1",
+                  "SKILL_WORKBUDDY_CAPTURE_V1"
+                ],
+                "exclusion_rules": [
+                  "DOB_EXACT_CONFLICT"
+                ],
+                "linked_rules": [],
+                "data_issues": [],
+                "gate_flags": []
+              }
+            ],
+            "review_required": true,
+            "policy_version": "CANDIDATE-0.8.1",
+            "disposition_flags": [
+              "SCREENING_ALERT_OBSERVED",
+              "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
+            ],
+            "exclusion_evidence_detected": true,
+            "exclusion_authorized": false,
+            "investigation_status": "completed_after_hard_evidence",
+            "skip_reason": null,
+            "tried_actions": [
+              {
+                "action": "boss:SYN-WB-CAPTURE-001:H1",
+                "tool": "workbuddy_browser_readonly",
+                "outcome": "completed",
+                "new_fact_candidates": 1
+              }
+            ],
+            "evidence_of_attempt": [
+              {
+                "action": "boss:SYN-WB-CAPTURE-001:H1",
+                "tool": "workbuddy_browser_readonly",
+                "received_fact_count": 1,
+                "evidence_ids": [
+                  "SYN-WB-CAPTURE-001:H1:ln:dob"
+                ]
+              }
+            ],
+            "document_evidence": [],
+            "hit_evidence_links": [],
+            "verification_records": [],
+            "research_facts": [
+              {
+                "source_tool": "workbuddy_browser_readonly",
+                "action_key": "boss:SYN-WB-CAPTURE-001:H1",
+                "side": "hit",
+                "field": "dob",
+                "value": "1979-11-03",
+                "evidence_id": "SYN-WB-CAPTURE-001:H1:ln:dob",
+                "origin": "ln_structured",
+                "checked": true,
+                "context": "",
+                "source_url": "synthetic://ln-record/H1",
+                "verification_id": "",
+                "extraction_verified": null,
+                "content_verified": null,
+                "date_precision": ""
+              }
+            ],
+            "corroboration": [],
+            "rule_findings": [
+              {
+                "rule_id": "P01_NAME",
+                "authority": "proposed",
+                "matches": [
+                  "name_exact"
+                ],
+                "output": "SOFT_LINK",
+                "prohibited_inferences": "name alone never proves identity",
+                "requires_review": true
+              },
+              {
+                "rule_id": "P02_COMPLETE_DOB",
+                "authority": "proposed",
+                "matches": [
+                  "DOB_EXACT_CONFLICT"
+                ],
+                "output": "EXCLUSION_OR_LINK_CANDIDATE",
+                "prohibited_inferences": "year or incomplete date not hard",
+                "requires_review": true
+              }
+            ],
+            "gate": {
+              "screening_alert_observed": true,
+              "requires_manual_screening_review": false,
+              "compliance_escalation_required": false,
+              "conditions": [
+                "SCREENING_ALERT_OBSERVED",
+                "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
+              ],
+              "trigger_history": [
+                {
+                  "identity_state": "unresolved",
+                  "hit_id": "H1",
+                  "category": "enforcement",
+                  "category_labels": [
+                    "enforcement"
+                  ],
+                  "compliance_escalation_triggered": false,
+                  "compliance_escalation_retained": false
+                },
+                {
+                  "identity_state": "excluded_candidate",
+                  "hit_id": "H1",
+                  "category": "enforcement",
+                  "category_labels": [
+                    "enforcement"
+                  ],
+                  "compliance_escalation_triggered": false,
+                  "compliance_escalation_retained": false
+                },
+                {
+                  "identity_state": "excluded_candidate",
+                  "hit_id": "H1",
+                  "category": "enforcement",
+                  "category_labels": [
+                    "enforcement"
+                  ],
+                  "compliance_escalation_triggered": false,
+                  "compliance_escalation_retained": false
+                }
+              ],
+              "escalation_policy_ref": "UNAPPROVED_DEMO_CONFIGURATION"
+            },
+            "gate_final_check": {
+              "alert_preserved_after_conclusion": true,
+              "compliance_escalation_retained": false
+            },
+            "explanation": {
+              "why_exclusion": "发现排除候选证据（不代表获准放行）：DOB_EXACT_CONFLICT",
+              "why_continue_or_stop": "route=EXCLUSION_CANDIDATE; DOB_EXACT_CONFLICT",
+              "why_investigation_skipped": "调查已执行：RESEARCH_QUERY:boss:SYN-WB-CAPTURE-001:H1",
+              "why_suspicion": "未进入残余可疑度评估",
+              "why_report": "当前未触发已配置的强制合规升级；不默认进入人工调查队列，处置须遵循授权政策",
+              "investigation_status": "completed_after_hard_evidence",
+              "identity_link_signals": []
+            },
+            "execution_path": [
+              {
+                "action": "EVALUATE",
+                "round": 1,
+                "risk_gate": [
+                  "SCREENING_ALERT_OBSERVED",
+                  "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
+                ],
+                "rules": [
+                  "P01_NAME"
+                ]
+              },
+              {
+                "action": "INVESTIGATE",
+                "key": "boss:SYN-WB-CAPTURE-001:H1",
+                "tool": "workbuddy_browser_readonly",
+                "skill": "SKILL_PERSON_LN_V1"
+              },
+              {
+                "action": "EVALUATE",
+                "round": 2,
+                "risk_gate": [
+                  "SCREENING_ALERT_OBSERVED",
+                  "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
+                ],
+                "rules": [
+                  "P01_NAME",
+                  "P02_COMPLETE_DOB"
+                ]
+              },
+              {
+                "action": "WRITE_DISPOSITION",
+                "tool": "disposition_writer",
+                "skill": "SKILL_DISPOSITION_REPORTING_V1",
+                "report_recommended": false
+              }
+            ],
+            "stop_reason": "SUFFICIENT_EXCLUSION_EVIDENCE",
+            "disposition": {
+              "recommendation": "EXCLUSION_CANDIDATE",
+              "business_conclusion": "未命中",
+              "business_conclusion_status": "DRAFT_NOT_APPROVED",
+              "conclusion_source": "AGENT_EVIDENCE_RULES",
+              "identity_status": "excluded_candidate",
+              "report_recommended": false,
+              "manual_queue_required": false,
+              "compliance_escalation_required_by_policy": false,
+              "automatically_sent": false,
+              "automatically_cleared": false,
+              "investigation_complete": true,
+              "internal_note": "未命中【执法】：姓名一致，出生日期不同（入网1985-04-12，LN 1979-11-03）；排除依据待确认。",
+              "compliance_message": "",
+              "source_refs": [
+                "SYN-WB-CAPTURE-001:app:name",
+                "SYN-WB-CAPTURE-001:H1:ln:name",
+                "SYN-WB-CAPTURE-001:app:dob",
+                "SYN-WB-CAPTURE-001:H1:ln:dob"
+              ],
+              "attribution": "未提供可引用的风险事由来源",
+              "policy_status": "候选上报规则未经公司批准；不自动发送、放行或关闭 LN 工单"
+            },
+            "version_snapshot": {
+              "policy": "CANDIDATE-0.8.1",
+              "rules": "INTEGRATED-P01-P10",
+              "registry": "10",
+              "skills": "SKILL_PERSON_LN_V1+SKILL_WORKBUDDY_CAPTURE_V1+SKILL_DISPOSITION_REPORTING_V1"
+            }
+          }
+        },
+        "duration_ms": null
+      },
+      {
+        "seq": 59,
+        "elapsed_ms": 179.592,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H3",
@@ -816,8 +1154,8 @@
         "duration_ms": null
       },
       {
-        "seq": 54,
-        "elapsed_ms": 151.509,
+        "seq": 60,
+        "elapsed_ms": 179.599,
         "kind": "TOOL_FINISHED",
         "stage": "disposition",
         "hit_id": "H3",
@@ -827,11 +1165,11 @@
           "action": "write_draft",
           "report_recommended": true
         },
-        "duration_ms": 52.48
+        "duration_ms": 74.643
       },
       {
-        "seq": 55,
-        "elapsed_ms": 151.512,
+        "seq": 61,
+        "elapsed_ms": 179.603,
         "kind": "HIT_FINISHED",
         "stage": "orchestrator",
         "hit_id": "H3",
@@ -841,11 +1179,11 @@
           "identity": "strong_link",
           "recommendation": "SUSPECTED_HIT_REPORT_DRAFT"
         },
-        "duration_ms": 151.023
+        "duration_ms": 178.836
       },
       {
-        "seq": 56,
-        "elapsed_ms": 151.696,
+        "seq": 62,
+        "elapsed_ms": 179.743,
         "kind": "HIT_RESULT_READY",
         "stage": "orchestrator",
         "hit_id": "H3",
@@ -1123,346 +1461,8 @@
         "duration_ms": null
       },
       {
-        "seq": 57,
-        "elapsed_ms": 156.55,
-        "kind": "SKILL_SELECTED",
-        "stage": "skill",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "skill_ids": [
-            "SKILL_DISPOSITION_REPORTING_V1"
-          ],
-          "contract_applied": true
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 58,
-        "elapsed_ms": 156.559,
-        "kind": "TOOL_FINISHED",
-        "stage": "disposition",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "tool": "disposition_writer",
-          "action": "write_draft",
-          "report_recommended": false
-        },
-        "duration_ms": 56.172
-      },
-      {
-        "seq": 59,
-        "elapsed_ms": 156.563,
-        "kind": "HIT_FINISHED",
-        "stage": "orchestrator",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "route": "EXCLUSION_CANDIDATE",
-          "identity": "excluded_candidate",
-          "recommendation": "EXCLUSION_CANDIDATE"
-        },
-        "duration_ms": 156.372
-      },
-      {
-        "seq": 60,
-        "elapsed_ms": 156.747,
-        "kind": "HIT_RESULT_READY",
-        "stage": "orchestrator",
-        "hit_id": "H1",
-        "status": "ok",
-        "details": {
-          "decision": {
-            "hit_id": "H1",
-            "route": "EXCLUSION_CANDIDATE",
-            "identity": "excluded_candidate",
-            "suspicion": null,
-            "evidence": {
-              "exclusion_rules": [
-                "DOB_EXACT_CONFLICT"
-              ],
-              "linked_rules": [],
-              "soft_signals": [
-                "name_exact"
-              ],
-              "data_issues": [],
-              "anchors": [
-                "SYN-WB-CAPTURE-001:app:name",
-                "SYN-WB-CAPTURE-001:H1:ln:name",
-                "SYN-WB-CAPTURE-001:app:dob",
-                "SYN-WB-CAPTURE-001:H1:ln:dob"
-              ]
-            },
-            "reasons": [
-              "DOB_EXACT_CONFLICT"
-            ],
-            "actions": [
-              "RESEARCH_QUERY:boss:SYN-WB-CAPTURE-001:H1"
-            ],
-            "history": [
-              {
-                "step": 1,
-                "known_hit_facts": 1,
-                "checked_research_keys": [],
-                "applied_skill": "SKILL_PERSON_LN_V1",
-                "skill_bundle": [
-                  "SKILL_PERSON_LN_V1",
-                  "SKILL_WORKBUDDY_CAPTURE_V1"
-                ],
-                "exclusion_rules": [],
-                "linked_rules": [],
-                "data_issues": [],
-                "gate_flags": []
-              },
-              {
-                "step": 2,
-                "known_hit_facts": 2,
-                "checked_research_keys": [
-                  "boss:SYN-WB-CAPTURE-001:H1"
-                ],
-                "applied_skill": "SKILL_PERSON_LN_V1",
-                "skill_bundle": [
-                  "SKILL_PERSON_LN_V1",
-                  "SKILL_WORKBUDDY_CAPTURE_V1"
-                ],
-                "exclusion_rules": [
-                  "DOB_EXACT_CONFLICT"
-                ],
-                "linked_rules": [],
-                "data_issues": [],
-                "gate_flags": []
-              }
-            ],
-            "review_required": true,
-            "policy_version": "CANDIDATE-0.8.1",
-            "disposition_flags": [
-              "SCREENING_ALERT_OBSERVED",
-              "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
-            ],
-            "exclusion_evidence_detected": true,
-            "exclusion_authorized": false,
-            "investigation_status": "completed_after_hard_evidence",
-            "skip_reason": null,
-            "tried_actions": [
-              {
-                "action": "boss:SYN-WB-CAPTURE-001:H1",
-                "tool": "workbuddy_browser_readonly",
-                "outcome": "completed",
-                "new_fact_candidates": 1
-              }
-            ],
-            "evidence_of_attempt": [
-              {
-                "action": "boss:SYN-WB-CAPTURE-001:H1",
-                "tool": "workbuddy_browser_readonly",
-                "received_fact_count": 1,
-                "evidence_ids": [
-                  "SYN-WB-CAPTURE-001:H1:ln:dob"
-                ]
-              }
-            ],
-            "document_evidence": [],
-            "hit_evidence_links": [],
-            "verification_records": [],
-            "research_facts": [
-              {
-                "source_tool": "workbuddy_browser_readonly",
-                "action_key": "boss:SYN-WB-CAPTURE-001:H1",
-                "side": "hit",
-                "field": "dob",
-                "value": "1979-11-03",
-                "evidence_id": "SYN-WB-CAPTURE-001:H1:ln:dob",
-                "origin": "ln_structured",
-                "checked": true,
-                "context": "",
-                "source_url": "synthetic://ln-record/H1",
-                "verification_id": "",
-                "extraction_verified": null,
-                "content_verified": null,
-                "date_precision": ""
-              }
-            ],
-            "corroboration": [],
-            "rule_findings": [
-              {
-                "rule_id": "P01_NAME",
-                "authority": "proposed",
-                "matches": [
-                  "name_exact"
-                ],
-                "output": "SOFT_LINK",
-                "prohibited_inferences": "name alone never proves identity",
-                "requires_review": true
-              },
-              {
-                "rule_id": "P02_COMPLETE_DOB",
-                "authority": "proposed",
-                "matches": [
-                  "DOB_EXACT_CONFLICT"
-                ],
-                "output": "EXCLUSION_OR_LINK_CANDIDATE",
-                "prohibited_inferences": "year or incomplete date not hard",
-                "requires_review": true
-              }
-            ],
-            "gate": {
-              "screening_alert_observed": true,
-              "requires_manual_screening_review": false,
-              "compliance_escalation_required": false,
-              "conditions": [
-                "SCREENING_ALERT_OBSERVED",
-                "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
-              ],
-              "trigger_history": [
-                {
-                  "identity_state": "unresolved",
-                  "hit_id": "H1",
-                  "category": "enforcement",
-                  "category_labels": [
-                    "enforcement"
-                  ],
-                  "compliance_escalation_triggered": false,
-                  "compliance_escalation_retained": false
-                },
-                {
-                  "identity_state": "excluded_candidate",
-                  "hit_id": "H1",
-                  "category": "enforcement",
-                  "category_labels": [
-                    "enforcement"
-                  ],
-                  "compliance_escalation_triggered": false,
-                  "compliance_escalation_retained": false
-                },
-                {
-                  "identity_state": "excluded_candidate",
-                  "hit_id": "H1",
-                  "category": "enforcement",
-                  "category_labels": [
-                    "enforcement"
-                  ],
-                  "compliance_escalation_triggered": false,
-                  "compliance_escalation_retained": false
-                }
-              ],
-              "escalation_policy_ref": "UNAPPROVED_DEMO_CONFIGURATION"
-            },
-            "gate_final_check": {
-              "alert_preserved_after_conclusion": true,
-              "compliance_escalation_retained": false
-            },
-            "explanation": {
-              "why_exclusion": "发现排除候选证据（不代表获准放行）：DOB_EXACT_CONFLICT",
-              "why_continue_or_stop": "route=EXCLUSION_CANDIDATE; DOB_EXACT_CONFLICT",
-              "why_investigation_skipped": "调查已执行：RESEARCH_QUERY:boss:SYN-WB-CAPTURE-001:H1",
-              "why_suspicion": "未进入残余可疑度评估",
-              "why_report": "当前未触发已配置的强制合规升级；不默认进入人工调查队列，处置须遵循授权政策",
-              "investigation_status": "completed_after_hard_evidence",
-              "identity_link_signals": []
-            },
-            "execution_path": [
-              {
-                "action": "EVALUATE",
-                "round": 1,
-                "risk_gate": [
-                  "SCREENING_ALERT_OBSERVED",
-                  "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
-                ],
-                "rules": [
-                  "P01_NAME"
-                ]
-              },
-              {
-                "action": "INVESTIGATE",
-                "key": "boss:SYN-WB-CAPTURE-001:H1",
-                "tool": "workbuddy_browser_readonly",
-                "skill": "SKILL_PERSON_LN_V1"
-              },
-              {
-                "action": "EVALUATE",
-                "round": 2,
-                "risk_gate": [
-                  "SCREENING_ALERT_OBSERVED",
-                  "ESCALATION_NOT_TRIGGERED_BY_CURRENT_POLICY"
-                ],
-                "rules": [
-                  "P01_NAME",
-                  "P02_COMPLETE_DOB"
-                ]
-              },
-              {
-                "action": "WRITE_DISPOSITION",
-                "tool": "disposition_writer",
-                "skill": "SKILL_DISPOSITION_REPORTING_V1",
-                "report_recommended": false
-              }
-            ],
-            "stop_reason": "SUFFICIENT_EXCLUSION_EVIDENCE",
-            "disposition": {
-              "recommendation": "EXCLUSION_CANDIDATE",
-              "business_conclusion": "未命中",
-              "business_conclusion_status": "DRAFT_NOT_APPROVED",
-              "conclusion_source": "AGENT_EVIDENCE_RULES",
-              "identity_status": "excluded_candidate",
-              "report_recommended": false,
-              "manual_queue_required": false,
-              "compliance_escalation_required_by_policy": false,
-              "automatically_sent": false,
-              "automatically_cleared": false,
-              "investigation_complete": true,
-              "internal_note": "未命中【执法】：姓名一致，出生日期不同（入网1985-04-12，LN 1979-11-03）；排除依据待确认。",
-              "compliance_message": "",
-              "source_refs": [
-                "SYN-WB-CAPTURE-001:app:name",
-                "SYN-WB-CAPTURE-001:H1:ln:name",
-                "SYN-WB-CAPTURE-001:app:dob",
-                "SYN-WB-CAPTURE-001:H1:ln:dob"
-              ],
-              "attribution": "未提供可引用的风险事由来源",
-              "policy_status": "候选上报规则未经公司批准；不自动发送、放行或关闭 LN 工单"
-            },
-            "version_snapshot": {
-              "policy": "CANDIDATE-0.8.1",
-              "rules": "INTEGRATED-P01-P10",
-              "registry": "10",
-              "skills": "SKILL_PERSON_LN_V1+SKILL_WORKBUDDY_CAPTURE_V1+SKILL_DISPOSITION_REPORTING_V1"
-            }
-          }
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 61,
-        "elapsed_ms": 159.884,
-        "kind": "SKILL_SELECTED",
-        "stage": "skill",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "skill_ids": [
-            "SKILL_PERSON_LN_V1",
-            "SKILL_RESIDUAL_SUSPICION_V1"
-          ],
-          "contract_applied": true
-        },
-        "duration_ms": null
-      },
-      {
-        "seq": 62,
-        "elapsed_ms": 159.924,
-        "kind": "SUSPICION_EVALUATED",
-        "stage": "suspicion",
-        "hit_id": "H2",
-        "status": "ok",
-        "details": {
-          "score_available": false
-        },
-        "duration_ms": 0.032
-      },
-      {
         "seq": 63,
-        "elapsed_ms": 178.023,
+        "elapsed_ms": 186.439,
         "kind": "POLICY_CHECK",
         "stage": "policy",
         "hit_id": "H2",
@@ -1475,7 +1475,7 @@
       },
       {
         "seq": 64,
-        "elapsed_ms": 203.295,
+        "elapsed_ms": 198.177,
         "kind": "SKILL_SELECTED",
         "stage": "skill",
         "hit_id": "H2",
@@ -1490,7 +1490,7 @@
       },
       {
         "seq": 65,
-        "elapsed_ms": 203.311,
+        "elapsed_ms": 198.183,
         "kind": "TOOL_FINISHED",
         "stage": "disposition",
         "hit_id": "H2",
@@ -1500,11 +1500,11 @@
           "action": "write_draft",
           "report_recommended": false
         },
-        "duration_ms": 43.333
+        "duration_ms": 28.739
       },
       {
         "seq": 66,
-        "elapsed_ms": 203.318,
+        "elapsed_ms": 198.187,
         "kind": "HIT_FINISHED",
         "stage": "orchestrator",
         "hit_id": "H2",
@@ -1514,11 +1514,11 @@
           "identity": "unresolved",
           "recommendation": "INSUFFICIENT_EVIDENCE_RECORDED"
         },
-        "duration_ms": 202.972
+        "duration_ms": 197.628
       },
       {
         "seq": 67,
-        "elapsed_ms": 203.803,
+        "elapsed_ms": 198.361,
         "kind": "HIT_RESULT_READY",
         "stage": "orchestrator",
         "hit_id": "H2",
@@ -1859,7 +1859,7 @@
               "automatically_sent": false,
               "automatically_cleared": false,
               "investigation_complete": true,
-              "internal_note": "【负面新闻】证据不足：姓名一致；暂无有效进一步调查线索，未确认命中或排除。",
+              "internal_note": "【负面新闻】证据不足，无法确定是否命中：姓名一致；命中记录未提供可与入网主体比对的独立身份字段，不可据此判为未命中。",
               "compliance_message": "",
               "source_refs": [
                 "SYN-WB-CAPTURE-001:app:name",
@@ -1880,7 +1880,7 @@
       },
       {
         "seq": 68,
-        "elapsed_ms": 204.173,
+        "elapsed_ms": 198.506,
         "kind": "CASE_FINISHED",
         "stage": "orchestrator",
         "hit_id": null,
@@ -1888,12 +1888,12 @@
         "details": {
           "hits": 3
         },
-        "duration_ms": 204.118
+        "duration_ms": 198.41
       }
     ],
     "stats": {
       "hits": 3,
-      "elapsed_ms": 204.118,
+      "elapsed_ms": 198.41,
       "fixture_source_reads": 0,
       "capture_tool_reads": {
         "workbuddy_browser_readonly": 3,
@@ -2084,7 +2084,7 @@
       "business_conclusion_status": "NO_CONCLUSION",
       "conclusion_source": "AGENT_EVIDENCE_RULES",
       "recommendation": "INSUFFICIENT_EVIDENCE_RECORDED",
-      "internal_note": "【负面新闻】证据不足：姓名一致；暂无有效进一步调查线索，未确认命中或排除。",
+      "internal_note": "【负面新闻】证据不足，无法确定是否命中：姓名一致；命中记录未提供可与入网主体比对的独立身份字段，不可据此判为未命中。",
       "report_recommended": false,
       "manual_queue_required": false,
       "automatically_sent": false,
@@ -2471,20 +2471,22 @@
     "authorized_local_aggregates": {
       "cases": 8,
       "hits": 154,
-      "events": 3362,
-      "engine_ms": 7913.154,
-      "wall_ms": 7938.579,
-      "mean_engine_ms_per_hit": 51.384,
+      "events": 3360,
+      "engine_ms": 15922.158,
+      "wall_ms": 15942.572,
+      "mean_engine_ms_per_hit": 103.391,
       "capture_tool_reads": {
         "workbuddy_browser_readonly": 154,
         "workbuddy_llm_capture": 16
       },
+      "distinct_per_hit_notes": 154,
+      "report_drafts": 1,
       "manual_queue_tasks": 0,
       "automatic_sends": 0,
       "automatic_clearances": 0,
       "note": "授权内部环境的聚合计数；不含任何业务字段、工单号或日志正文。"
     },
-    "tests_passed": 203,
+    "tests_passed": 218,
     "tests_note": "全量离线回归测试通过（见 README）"
   }
 }

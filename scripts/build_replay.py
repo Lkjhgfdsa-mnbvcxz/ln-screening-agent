@@ -5,15 +5,16 @@ embeds the *actual* emitted event stream into a single static HTML file. No
 network request, no credential, no real merchant / identity / internal URL is
 ever read by this script.
 
-    python3 scripts/build_replay.py --tests 194
+    python3 scripts/build_replay.py --tests 218
 
 Outputs:
     examples/workbuddy_capture_replay.json   machine-readable replay data
     replay.html                             self-contained static replay page
-    index.html                              GitHub Pages entry -> replay.html
 
 The page lives at the repository root so that GitHub Pages (source: `/`) and a
-locally downloaded copy resolve the same relative links.
+locally downloaded copy resolve the same relative links. `index.html` (the
+Pages entry pointing at `demo.html`) is owned by `scripts/build_demo.py`; this
+generator must not overwrite it.
 """
 from __future__ import annotations
 
@@ -37,21 +38,23 @@ CASE_PATH = ROOT / "examples" / "case_workbuddy_capture.json"
 BUNDLE_PATH = ROOT / "examples" / "workbuddy_capture_bundle.json"
 REPLAY_JSON = ROOT / "examples" / "workbuddy_capture_replay.json"
 REPLAY_HTML = ROOT / "replay.html"
-INDEX_HTML = ROOT / "index.html"
 
-# Aggregated, non-business counters from the authorized local validation run.
+# Aggregated, non-business counters from the final authorized local validation
+# run (after the structured-capture and per-hit-note fixes).
 # No case id, subject, identifier, URL or free-text evidence is copied here.
 AUTHORIZED_RUN_AGGREGATES = {
     "cases": 8,
     "hits": 154,
-    "events": 3362,
-    "engine_ms": 7913.154,
-    "wall_ms": 7938.579,
-    "mean_engine_ms_per_hit": 51.384,
+    "events": 3360,
+    "engine_ms": 15922.158,
+    "wall_ms": 15942.572,
+    "mean_engine_ms_per_hit": 103.391,
     "capture_tool_reads": {
         "workbuddy_browser_readonly": 154,
         "workbuddy_llm_capture": 16,
     },
+    "distinct_per_hit_notes": 154,
+    "report_drafts": 1,
     "manual_queue_tasks": 0,
     "automatic_sends": 0,
     "automatic_clearances": 0,
@@ -207,19 +210,6 @@ def build(tests_passed: int | None) -> dict:
     _assert_synthetic(payload)
     return payload
 
-
-INDEX_TEMPLATE = """<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=replay.html">
-<title>LN 筛查 Agent · 合成案例执行回放</title>
-</head>
-<body>
-<p>正在打开 <a href="replay.html">合成案例执行回放</a>…</p>
-</body>
-</html>
-"""
 
 HTML = r"""<!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
@@ -590,13 +580,12 @@ def main() -> None:
     )
     safe = data.replace("</", "<\\/")
     REPLAY_HTML.write_text(HTML.replace("__REPLAY_DATA__", safe), encoding="utf-8")
-    INDEX_HTML.write_text(INDEX_TEMPLATE, encoding="utf-8")
     stale = ROOT / "docs" / "replay.html"
     if stale.exists():
         stale.unlink()
     print(f"events={payload['execution']['event_count']} hits={len(payload['hits'])} "
           f"engine_ms={payload['execution']['stats']['elapsed_ms']}")
-    for path in (REPLAY_JSON, REPLAY_HTML, INDEX_HTML):
+    for path in (REPLAY_JSON, REPLAY_HTML):
         print(f"wrote {path.relative_to(ROOT)} ({path.stat().st_size} bytes)")
 
 

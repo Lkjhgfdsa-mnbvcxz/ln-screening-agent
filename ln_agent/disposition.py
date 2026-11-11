@@ -150,7 +150,7 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
             lead = "命中" if business_conclusion == "命中" else "疑似命中"
             internal = f"{lead}【{risk_type}】：{facts_sentence}。"
             if risk_summary:
-                internal += f"事由：{risk_summary}。"
+                internal += f"事由：{risk_summary.rstrip('。；;')}。"
             else:
                 internal += "名单事由待补充来源说明。"
             if not strong_link and not sufficient_score:
@@ -160,16 +160,23 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
     elif recommendation == "TECHNICAL_OR_POLICY_HOLD":
         internal = f"【{risk_type}】核验未完成：工具或政策约束阻止进一步处理；不得视为误报。"
     else:
-        internal = f"【{risk_type}】证据不足：{facts_sentence}；暂无有效进一步调查线索，未确认命中或排除。"
+        internal = (f"【{risk_type}】证据不足，无法确定是否命中：{facts_sentence}；"
+                    "命中记录未提供可与入网主体比对的独立身份字段，不可据此判为未命中。")
 
     # Optional material context is only inserted when backed by an explicit
     # evidence_id. Never infer address changes or wrongdoing from name alone.
+    # It must also appear on non-conclusive drafts: otherwise 150+ unresolved
+    # hits all collapse into one identical, unusable sentence. This changes
+    # wording only; conclusion / recommendation / rules are unaffected.
     context_parts = [_singleline(c.get("text"), 75) for c in (hit.risk_event or {}).get("material_context", [])
                      if isinstance(c, dict) and c.get("evidence_id") and c.get("text") and risk_summary]
     if recommendation == "SUSPECTED_HIT_REPORT_DRAFT" and context_parts:
         internal += "补充：" + "；".join(context_parts[:2]) + "。"
+    elif recommendation in {"INSUFFICIENT_EVIDENCE_RECORDED", "UNRESOLVED_EVIDENCE_CHECK",
+                            "TECHNICAL_OR_POLICY_HOLD"} and context_parts:
+        internal += "补充：" + "；".join(context_parts[:3]) + "。"
 
-    internal = _singleline(internal, 700)
+    internal = _singleline(internal, 900)
     subject_name = (_first(subject.facts, "company_name") or _first(subject.facts, "name"))
     entity_label = _singleline(subject_name.value, 100) if subject_name else _singleline(subject.subject_id)
     case_ref = _singleline(case.context.get("application_ref") or case.case_id, 130)

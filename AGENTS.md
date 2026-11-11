@@ -45,8 +45,17 @@ No real merchant/customer data or credentials should be committed.
 
 ## Public synthetic replay (v0.9.3)
 
-- `scripts/build_replay.py` is the **only** publisher of execution data. It reads just `examples/case_workbuddy_capture.json` and `examples/workbuddy_capture_bundle.json`, runs the real engine, and writes `examples/workbuddy_capture_replay.json`, `replay.html` and `index.html`.
+- `scripts/build_replay.py` is the **only** publisher of execution data. It reads just `examples/case_workbuddy_capture.json` and `examples/workbuddy_capture_bundle.json`, runs the real engine, and writes `examples/workbuddy_capture_replay.json` and `replay.html`. It must **not** write `index.html` (owned by `scripts/build_demo.py`).
 - Never point the generator, the workbench, or a test at an authorized local capture directory or any other real-data path. Real bundles, structured DOM captures and full JSONL logs stay outside the repository.
 - Keep `_assert_synthetic()` and `tests/test_public_replay.py` intact; they are the publication guard. Only aggregate, non-business counters may appear in public pages.
 - `replay.html` must stay a single self-contained file with no external resources, so it works both on GitHub Pages (site source `/`) and from a downloaded `file://` copy. Keep relative links root-based.
 - Changing the engine's emitted events requires regenerating the replay and updating the test count passed via `--tests`.
+
+## Public synthetic workbench demo (v0.9.4)
+
+- `scripts/build_demo.py` owns `demo.html`, `examples/demo_workbench_data.json` and `index.html` (the Pages entry). Run `build_replay.py` first and `build_demo.py` last, or the replay generator will not see the current test count; never reintroduce an `index.html` write in `build_replay.py`.
+- The demo is a **checklist-level** view, not a flat event stream: home = one card per checklist subject; detail = that checklist's per-hit progress, final business conclusion and per-hit reason. Keep this hierarchy; do not collapse it into a single timeline.
+- Every value is fabricated by the generator. The Qichacha profile copies only the connector's **field schema**; `synthetic=true` and the "no live query" note must stay visible, together with the connector rule that 0 structured hits does not mean no risk. Never claim a real QCC lookup or paste connector output into the public page.
+- `_assert_synthetic()` in `build_demo.py` and `tests/test_public_demo.py` are the publication guard. Keep zero external resources (`<script src>`, stylesheets, `fetch`, XHR, remote images) so the page works from GitHub Pages and from `file://`.
+- Timing invariants: `engine_ms` is the sum of per-hit costs, `wall_ms = engine_ms / workers`, `mean_ms_per_hit = engine_ms / hits`. Never divide parallel wall time by hit count again.
+- Real screenshots under `assets/demo-*.jpg` are generated from an isolated headless Chrome rendering of the current `demo.html`; regenerate them whenever the demo layout changes.

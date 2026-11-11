@@ -1,0 +1,592 @@
+"""Build the public, fully synthetic multi-case workbench demo.
+
+The real workbench runs one Case (one screening checklist) at a time. Reviewers
+asked for the missing level above it: a checklist-level overview where every
+checklist is a card, and clicking one opens its per-hit progress and final
+business conclusion. This generator produces that as a single static page.
+
+    python3 scripts/build_demo.py
+
+Outputs:
+    examples/demo_workbench_data.json   synthetic case/hit data
+    demo.html                           self-contained static demo (no backend)
+    index.html                          GitHub Pages entry -> demo.html
+
+`index.html` is owned by this generator; `scripts/build_replay.py` must not
+overwrite it (the single-case replay is reachable by link from the demo).
+
+All identifiers, names, domains and reasons are fabricated. The *shape* (8
+checklists, 154 hits, 4 workers, ~103 ms per hit, one 88-hit and one 49-hit
+checklist) mirrors an authorized local validation run; no real business datum
+is included.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT_JSON = ROOT / "examples" / "demo_workbench_data.json"
+OUT_HTML = ROOT / "demo.html"
+OUT_INDEX = ROOT / "index.html"
+
+# (synthetic case label, subject, entity type, hit count, conclusion mix)
+CASES = [
+    ("SYN-LN-2601", "Synth Shipping Holdings Ltd.", "企业", 49,
+     {"无法确定": 45, "疑似命中": 3, "未命中": 1, "命中": 0}),
+    ("SYN-LN-2602", "合成样例 · 个人主体 A", "个人", 88,
+     {"无法确定": 82, "疑似命中": 4, "未命中": 2, "命中": 0}),
+    ("SYN-LN-2603", "合成样例 · 个人主体 B", "个人", 10,
+     {"无法确定": 8, "疑似命中": 2, "未命中": 0, "命中": 0}),
+    ("SYN-LN-2604", "合成样例 · 个人主体 C", "个人", 2,
+     {"无法确定": 1, "疑似命中": 0, "未命中": 1, "命中": 0}),
+    ("SYN-LN-2605", "合成样例 · 个人主体 D", "个人", 2,
+     {"无法确定": 1, "疑似命中": 1, "未命中": 0, "命中": 0}),
+    ("SYN-LN-2606", "SynthetIC Semiconductor Co., LIMITED", "企业", 1,
+     {"无法确定": 0, "疑似命中": 1, "未命中": 0, "命中": 0}),
+    ("SYN-LN-2607", "合成样例 · 企业主体 E", "企业", 1,
+     {"无法确定": 0, "疑似命中": 0, "未命中": 0, "命中": 1}),
+    ("SYN-LN-2608", "合成样例 · 个人主体 F", "个人", 1,
+     {"无法确定": 0, "疑似命中": 0, "未命中": 1, "命中": 0}),
+]
+
+CATEGORIES = ["制裁", "执法", "制裁,执法", "PEP", "不利媒体"]
+DOMAINS = [
+    "sanctions.example.org", "registry.example.org", "cases.example.org",
+    "bulletin.example.org", "media.example.org", "archive.example.org",
+]
+COMPANY_WORDS = ["Azul", "Boreal", "Cedar", "Delta", "Everest", "Fjord",
+                 "Granite", "Harbor", "Ionic", "Juniper", "Kestrel", "Lumen"]
+PERSON_WORDS = ["Chen", "Gao", "Li", "Lin", "Liu", "Mei", "Peng", "Shen",
+                "Sun", "Wang", "Zhang", "Zhou"]
+
+CONCLUSION_REASONS = {
+    "命中": "入网主体与名单记录的完整注册号一致，触发 P08 强关联规则；仍为未经审批的草稿。",
+    "未命中": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。",
+    "疑似命中": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。",
+    "无法确定": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。",
+}
+
+STAGES = ["排队", "规则核验", "调查取证", "结论草稿", "已完成"]
+STAGE_MS = [8, 24, 38, 22, 10]
+
+# Subject profiling is part of the company_ln / person_ln Skill contracts
+# (director, owner, jurisdiction, registration_number, employer, role). The
+# WorkBuddy Qichacha connector exposes exactly those fields via
+# get_company_profile / get_company_risk_scan / get_executive_risk_scan.
+# Values below are fabricated; the field SCHEMA mirrors the connector.
+QCC_TOOLS = ["get_company_profile", "get_company_risk_scan", "get_executive_risk_scan"]
+INDUSTRIES = ["水上运输业", "批发业", "软件和信息技术服务业",
+              "专用设备制造业", "商务服务业", "半导体分立器件制造"]
+SCALES = ["微型企业", "小型企业", "中型企业"]
+
+
+def _profile(ci: int, entity: str, subject: str) -> dict:
+    if entity == "企业":
+        display = [
+            {"label": "企查查行业", "value": INDUSTRIES[ci % len(INDUSTRIES)]},
+            {"label": "企业规模", "value": SCALES[ci % len(SCALES)]},
+            {"label": "员工人数", "value": f"{9 + ci * 7} 人（合成年报口径）"},
+            {"label": "成立日期", "value": f"20{14 + ci:02d}-0{ci % 9 + 1}-18"},
+            {"label": "注册资本", "value": f"{20 + ci * 80} 万元"},
+            {"label": "经营状态", "value": "存续（合成值）"},
+            {"label": "主营产品", "value": "合成业务描述，仅用于展示画像字段"},
+            {"label": "统一信用代码", "value": f"SYN-USCC-{ci + 1:04d}"},
+        ]
+        dimensions, zero = 35, 34 + (ci % 2)
+        nonzero = [] if zero == 35 else [{"name": "经营异常", "count": 1}]
+        scan_label = "企业 35 项风险因子"
+    else:
+        display = [
+            {"label": "关联企业", "value": f"Synthetic Holdings {ci + 1:02d} Ltd.（合成）"},
+            {"label": "任职", "value": ["法定代表人", "股东", "董事", "实际控制人"][ci % 4]},
+            {"label": "所在地域", "value": ["华东", "华北", "华南", "东北"][ci % 4] + "（合成）"},
+            {"label": "主营方向", "value": INDUSTRIES[(ci + 2) % len(INDUSTRIES)]},
+            {"label": "公开履历", "value": "合成公开报道摘要，仅用于展示画像字段"},
+            {"label": "企业锚定", "value": subject},
+            {"label": "任职企业数", "value": f"{2 + ci} 家（合成工商关联）"},
+            {"label": "关系网络", "value": f"关联 {3 + ci * 2} 个主体（合成）"},
+        ]
+        dimensions, zero = 18, 17 + (ci % 2)
+        nonzero = [] if zero == 18 else [{"name": "裁判文书", "count": 2}]
+        scan_label = "个人 18 项风险因子"
+    return {
+        "connector": "WorkBuddy 企查查连接器",
+        "tools": QCC_TOOLS,
+        "synthetic": True,
+        "note": "字段结构来自企查查连接器；本页所有取值均为合成演示值，未发起实时查询。",
+        "display": display,
+        "risk_scan": {
+            "label": scan_label,
+            "dimensions": dimensions,
+            "zero_hit": zero,
+            "nonzero": nonzero,
+        },
+    }
+
+
+def _reason(conclusion: str, domain: str, ln_id: str) -> str:
+    base = CONCLUSION_REASONS[conclusion]
+    return (f"{base} 记录源主域名 {domain}；"
+            f"命中侧 LN 记录号 {ln_id}（非证件号）。")
+
+
+def build() -> dict:
+    cases = []
+    for ci, (cid, subject, entity, count, mix) in enumerate(CASES):
+        labels = [c for c, n in mix.items() for _ in range(n)]
+        assert len(labels) == count, (cid, len(labels), count)
+        hits = []
+        for i in range(count):
+            n = i + 1
+            conclusion = labels[i]
+            domain = DOMAINS[(ci * 3 + i) % len(DOMAINS)]
+            category = CATEGORIES[(ci * 5 + i * 3) % len(CATEGORIES)]
+            score = 100 if i % 17 else 99
+            ln_id = f"7{ci}{i:03d}0{n:02d}"
+            if entity == "企业":
+                name = f"Synthetic {COMPANY_WORDS[i % len(COMPANY_WORDS)]} " \
+                       f"Trading {ci + 1:02d}-{n:02d} Co., Ltd."
+            else:
+                name = f"{PERSON_WORDS[i % len(PERSON_WORDS)]}, " \
+                       f"{PERSON_WORDS[(i + 5) % len(PERSON_WORDS)]} {ci + 1:02d}-{n:02d}"
+            # Per-hit cost is essentially flat; big checklists are parallelised.
+            duration = round(96 + ((ci * 7 + i * 11) % 17) + (3 if count > 40 else 0), 1)
+            path = ["EVALUATE", "INVESTIGATE · workbuddy_browser_readonly",
+                    "EVALUATE", "RESIDUAL_SUSPICION" if conclusion == "无法确定" else "WRITE_DISPOSITION"]
+            if conclusion == "疑似命中":
+                path.insert(3, "INVESTIGATE · workbuddy_llm_capture")
+            hits.append({
+                "hit_id": f"SYN-H{n:03d}",
+                "name": name,
+                "entity_type": entity,
+                "category": category,
+                "ln_score": score,
+                "ln_id": ln_id,
+                "source_domain": domain,
+                "conclusion": conclusion,
+                "conclusion_status": "DRAFT_NOT_APPROVED" if conclusion != "无法确定" else "NO_CONCLUSION",
+                "duration_ms": duration,
+                "reason": _reason(conclusion, domain, ln_id),
+                "stages": STAGES,
+                "stage_ms": STAGE_MS,
+                "path": path,
+                "source_count": 3 + (i % 8),
+            })
+        dist = {c: mix[c] for c in ("命中", "疑似命中", "未命中", "无法确定") if mix[c]}
+        # engine_ms = sum of per-hit costs (what the engine actually spent);
+        # wall_ms = that work spread across 4 workers. Never divide wall time
+        # by hit count again -- that produces a meaningless "ms per hit".
+        engine_ms = round(sum(h["duration_ms"] for h in hits), 1)
+        cases.append({
+            "case_id": cid,
+            "subject": subject,
+            "entity_type": entity,
+            "hit_count": count,
+            "workers": 4,
+            "engine_ms": engine_ms,
+            "wall_ms": round(engine_ms / 4, 1),
+            "mean_ms_per_hit": round(engine_ms / count, 1),
+            "conclusion_distribution": dist,
+            "profile": _profile(ci, entity, subject),
+            "hits": hits,
+        })
+    total_hits = sum(c["hit_count"] for c in cases)
+    dist = {k: sum(c["conclusion_distribution"].get(k, 0) for c in cases)
+            for k in ("命中", "疑似命中", "未命中", "无法确定")}
+    engine_total = round(sum(c["engine_ms"] for c in cases), 1)
+    return {
+        "schema": "ln-agent-demo-workbench/1.0",
+        "disclaimer": "SYNTHETIC ONLY — 所有工单号、主体、命中记录、域名与说明均为虚构；仅复现授权本地验证的运行形态与量级，不含任何真实业务数据。",
+        "generated_by": "scripts/build_demo.py",
+        "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织，与项目本地 SSE 实时工作台同构；静态版无需 Python 后端。",
+        "totals": {
+            "cases": len(cases),
+            "hits": total_hits,
+            "workers": 4,
+            "engine_ms": engine_total,
+            "wall_ms": round(sum(c["wall_ms"] for c in cases), 1),
+            "mean_ms_per_hit": round(engine_total / total_hits, 1),
+            "conclusion_distribution": dist,
+            "largest_case_hits": max(c["hit_count"] for c in cases),
+        },
+        "cases": cases,
+    }
+
+
+def _assert_synthetic(payload: dict) -> None:
+    blob = json.dumps(payload, ensure_ascii=False)
+    for marker in ("LN20", "sk-", "ghp_", "yeepay", "boss.", "merchantNo"):
+        if marker in blob:
+            raise RuntimeError(f"refusing to publish demo: found marker {marker!r}")
+    if re.search(r"(?<!\d)\d{15,18}(?!\d)", blob):
+        raise RuntimeError("refusing to publish demo: document-sized number")
+    if payload["totals"]["hits"] != 154 or payload["totals"]["cases"] != 8:
+        raise RuntimeError("demo shape drifted from the validated run")
+
+
+INDEX_HTML = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url=demo.html">
+<title>LN 筛查 Agent · 核验工作台 Demo</title>
+</head>
+<body>
+<p>正在打开 <a href="demo.html">多工单核验工作台 Demo</a>…</p>
+<p>另可查看 <a href="replay.html">单次执行事件回放</a>，或 <a href="demo.html?autorun=1">打开即自动运行 Demo</a>。</p>
+</body>
+</html>
+"""
+
+HTML = r"""<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LN 筛查 Agent · 核验工作台 Demo</title>
+<style>
+:root{--bg:#f4f6fa;--panel:#fff;--panel2:#f8fafc;--border:#e2e8f0;--text:#16202e;--muted:#6b7a8d;--accent:#2563eb;--accent2:#eff5ff;--shadow:0 1px 3px rgba(20,35,60,.07);--hit:#d93b3b;--susp:#d98514;--clear:#177a55;--unk:#7b8798}
+html[data-theme="dark"]{--bg:#10151d;--panel:#1a212c;--panel2:#151c25;--border:#2b3645;--text:#e8eef7;--muted:#9aa9bc;--accent:#7ea9ff;--accent2:#1c2a41;--shadow:0 1px 3px rgba(0,0,0,.3);--hit:#ff8b8b;--susp:#f0bd68;--clear:#69d3a5;--unk:#a9b6c8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1240px;margin:0 auto;padding:24px 22px 60px}
+header.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:24px;margin:0 0 7px;letter-spacing:-.3px}
+.sub{color:var(--muted);margin:0;max-width:820px;font-size:13px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.badge{font-size:11.5px;padding:3px 9px;border-radius:999px;background:var(--accent2);color:var(--accent);border:1px solid var(--border)}
+.badge.g{background:#e8f7f0;color:#137a4d}html[data-theme="dark"] .badge.g{background:#17342a;color:#7ce0b2}
+.btn{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:8px;padding:8px 13px;cursor:pointer;font-size:13px;box-shadow:var(--shadow)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{opacity:.9;color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:13px 15px;box-shadow:var(--shadow)}
+.kpi b{display:block;font-size:23px;letter-spacing:-.5px;line-height:1.25}
+.kpi span{color:var(--muted);font-size:12px}
+.stack{display:flex;height:7px;border-radius:99px;overflow:hidden;background:var(--border);margin:9px 0 7px}
+.stack i{display:block;height:100%}
+.c-hit{background:var(--hit)}.c-susp{background:var(--susp)}.c-clear{background:var(--clear)}.c-unk{background:var(--unk)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.legend b{font-weight:600;color:var(--text)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.section-title{font-size:15px;margin:22px 0 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.section-title small{font-weight:400;color:var(--muted);font-size:12px}
+.cases{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.case{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:15px;cursor:pointer;box-shadow:var(--shadow);transition:.15s;position:relative;overflow:hidden}
+.case:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 22px rgba(30,60,110,.12)}
+.case .cid{font-size:11.5px;color:var(--accent);font-weight:700;letter-spacing:.3px}
+.case .subject{font-size:13px;font-weight:600;margin:5px 0 9px;min-height:38px;word-break:break-word}
+.case .big{font-size:27px;font-weight:700;letter-spacing:-.6px;line-height:1.15}
+.case .big em{font-style:normal;font-size:12px;font-weight:500;color:var(--muted);margin-left:5px}
+.case .row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:8px}
+.case .foot{display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:9px;border-top:1px dashed var(--border);font-size:11.5px;color:var(--muted)}
+.case .go{color:var(--accent);font-weight:600}
+.case .progress{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);width:0;transition:width .25s}
+.pill{font-size:11px;border-radius:5px;padding:2px 7px;border:1px solid var(--border);white-space:nowrap}
+.p-hit{background:rgba(217,59,59,.11);color:var(--hit);border-color:transparent}
+.p-susp{background:rgba(217,133,20,.13);color:var(--susp);border-color:transparent}
+.p-clear{background:rgba(23,122,85,.11);color:var(--clear);border-color:transparent}
+.p-unk{background:rgba(123,135,152,.13);color:var(--unk);border-color:transparent}
+.chip{font-size:11px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--muted)}
+.detail{display:none}
+.detail.on{display:block}
+.home.off{display:none}
+.crumb{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;color:var(--muted)}
+.hero{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px}
+.hero h2{margin:0 0 4px;font-size:19px}
+.hero .meta{color:var(--muted);font-size:12.5px}
+.hero-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.hero-grid div{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+.hero-grid b{display:block;font-size:17px}
+.hero-grid span{font-size:11.5px;color:var(--muted)}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;color:var(--muted);padding:6px 11px;cursor:pointer;font-size:12px;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent2);color:var(--accent);font-weight:600}
+.search{border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:8px;padding:7px 11px;font-size:12.5px;min-width:190px}
+.hit{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 13px;margin-bottom:7px;cursor:pointer;box-shadow:var(--shadow)}
+.hit:hover{border-color:var(--accent)}
+.hit .r1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hit .idx{color:var(--muted);font-size:11.5px;min-width:44px;font-variant-numeric:tabular-nums}
+.hit .nm{font-weight:600;font-size:13px;flex:1;min-width:180px;word-break:break-word}
+.hit .r2{display:grid;grid-template-columns:minmax(0,1fr) 82px 96px;gap:12px;align-items:center;margin-top:8px}
+.steps{display:flex;gap:3px}
+.steps i{flex:1;height:5px;border-radius:3px;background:var(--border);transition:background .2s}
+.steps i.on{background:var(--accent)}
+.hit .phase{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.hit .ms{font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.hit .reason{display:none;margin-top:10px;padding-top:9px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--muted)}
+.hit.open .reason{display:block}
+.hit .reason b{color:var(--text)}
+.hit .path{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.hit .path i{font-style:normal;font-size:11px;background:var(--accent2);color:var(--accent);border-radius:5px;padding:2px 7px}
+.more{display:block;width:100%;margin-top:10px}
+.profile{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.profile h3{font-size:14px;margin:0 0 4px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.profile .src{font-size:11.5px;color:var(--muted);margin-bottom:11px}
+.profile .fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.profile .fields div{background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:7px 9px}
+.profile .fields span{display:block;font-size:11px;color:var(--muted)}
+.profile .fields b{font-size:12.5px;font-weight:600;word-break:break-word}
+.profile .scan{margin-top:10px;font-size:12px;color:var(--muted);border-top:1px dashed var(--border);padding-top:9px}
+.profile .scan b{color:var(--text)}
+.notice{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:11px 14px;color:var(--muted);font-size:12.5px;margin-top:18px}
+footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px;flex-wrap:wrap}
+@media(max-width:1050px){.cases{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:620px){.cases{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.hero-grid{grid-template-columns:repeat(2,1fr)}.hit .r2{grid-template-columns:1fr 70px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>LN 筛查 Agent · 核验工作台 Demo</h1>
+    <p class="sub">按<strong>工单主体</strong>组织：每张卡片是一张核查单，点进去看这条工单里<strong>每一条命中的处理进度与最终业务结论</strong>。点击「运行一遍 Demo」可看 4 workers 并行推进；也可用 <code>?autorun=1</code> 打开即自动运行。本页为静态单文件，无需后端、无需登录、全部为合成数据。</p>
+    <div class="badges"><span class="badge">8 个工单主体</span><span class="badge">154 条命中</span><span class="badge">按命中并行 · 4 workers</span><span class="badge">含企查查主体画像</span><span class="badge g">零外部请求</span><span class="badge">全部合成数据</span></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn primary" id="runall">▶ 运行一遍 Demo</button>
+    <button class="btn" id="theme">切换深色</button>
+    <a class="btn" href="examples/demo_workbench_data.json" download>下载数据</a>
+    <a class="btn" href="README.md">项目说明</a>
+  </div>
+</header>
+
+<div id="home" class="home">
+  <div class="kpis" id="kpis"></div>
+  <div class="section-title">工单主体总览 <small>点击任一工单查看逐条命中 · 大批量命中单（88 / 49 条）同样在此</small></div>
+  <div class="cases" id="cases"></div>
+  <div class="notice" id="scaleNote"></div>
+</div>
+
+<div id="detail" class="detail">
+  <div class="crumb"><button class="btn" id="back">← 返回工单总览</button><span id="crumbText"></span></div>
+  <div class="hero" id="hero"></div>
+  <div class="profile" id="profile"></div>
+  <div class="toolbar">
+    <button class="btn primary" id="runcase">▶ 运行本工单</button>
+    <div class="seg" id="filter"></div>
+    <input class="search" id="search" placeholder="搜索命中名称 / 来源域名">
+    <span style="font-size:12px;color:var(--muted)" id="shown"></span>
+  </div>
+  <div id="hits"></div>
+  <button class="btn more" id="more">加载更多命中</button>
+</div>
+
+<footer>
+  <a href="https://github.com/Lkjhgfdsa-mnbvcxz/ln-screening-agent">GitHub 仓库</a>
+  <a href="replay.html">单次执行回放</a>
+  <a href="docs/WORKBENCH.md">工作台与 SSE 接口说明</a>
+  <span>真实项目运行：<code>python3 run.py web</code> → <code>http://127.0.0.1:8765</code></span>
+</footer>
+</div>
+
+<script type="application/json" id="demo-data">__DEMO_DATA__</script>
+<script>
+(function(){
+ "use strict";
+ const D=JSON.parse(document.getElementById("demo-data").textContent);
+ const $=id=>document.getElementById(id);
+ const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+ const COLORS={"命中":"c-hit","疑似命中":"c-susp","未命中":"c-clear","无法确定":"c-unk"};
+ const PILL={"命中":"p-hit","疑似命中":"p-susp","未命中":"p-clear","无法确定":"p-unk"};
+ const ORDER=["命中","疑似命中","未命中","无法确定"];
+ let current=null, filter="全部", query="", shown=25, running=false, timers=[];
+
+ function stack(dist){
+   const total=Object.values(dist).reduce((a,b)=>a+b,0)||1;
+   return `<div class="stack">${ORDER.filter(k=>dist[k]).map(k=>`<i class="${COLORS[k]}" style="width:${dist[k]/total*100}%"></i>`).join("")}</div>`;
+ }
+ function legend(dist){
+   return `<div class="legend">${ORDER.filter(k=>dist[k]).map(k=>`<span><i class="dot ${COLORS[k]}"></i><b>${dist[k]}</b> ${k}</span>`).join("")}</div>`;
+ }
+ function renderKpis(){
+   const t=D.totals;
+   $("kpis").innerHTML=[
+     [t.cases,"工单主体"],[t.hits,"命中记录"],
+     [t.mean_ms_per_hit.toFixed(1)+" ms","单条命中平均耗时"],
+     [t.wall_ms.toFixed(0)+" ms","并行后总墙钟"],[t.workers,"并行 workers"]
+   ].map(([v,k])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
+   const big=D.cases.reduce((a,b)=>a.hit_count>b.hit_count?a:b);
+   $("scaleNote").innerHTML=`<strong>大批量命中怎么处理：</strong>工单内按命中切分，<b>4 个 worker 并行</b>调度同一套 Rule Engine → PolicyGuard → Investigation → Disposition 链路；每条命中独立完成即显示，不必等整单结束。8 张工单的引擎累计耗时 <b>${t.engine_ms.toFixed(0)} ms</b>，并行后墙钟 <b>${t.wall_ms.toFixed(0)} ms</b>；<b>单条命中平均 ${t.mean_ms_per_hit.toFixed(1)} ms</b>。最大的工单 <b>${big.case_id}</b> 有 <b>${big.hit_count}</b> 条命中，引擎累计 ${big.engine_ms.toFixed(0)} ms、并行墙钟 ${big.wall_ms.toFixed(0)} ms，平均仍是 <b>${big.mean_ms_per_hit.toFixed(1)} ms/命中</b>，与只有 1 条命中的工单同量级——单条成本不随工单规模放大。详情列表默认先渲染 25 条，可继续加载。`;
+ }
+ function renderCases(){
+   $("cases").innerHTML=D.cases.map((c,i)=>`
+     <div class="case" data-i="${i}">
+       <div class="cid">${esc(c.case_id)} <span class="chip">${esc(c.entity_type)}</span> <span class="chip">含主体画像</span></div>
+       <div class="subject">${esc(c.subject)}</div>
+       <div class="big">${c.hit_count}<em>条命中</em></div>
+       ${stack(c.conclusion_distribution)}
+       ${legend(c.conclusion_distribution)}
+       <div class="row"><span>并行墙钟 ${c.wall_ms.toFixed(0)} ms</span><span>平均 ${c.mean_ms_per_hit.toFixed(1)} ms/命中</span></div>
+       <div class="foot"><span class="pill p-clear">已完成 · 结论草稿</span><span class="go">点进去查看 →</span></div>
+       <div class="progress"></div>
+     </div>`).join("");
+   $("cases").addEventListener("click",e=>{
+     const card=e.target.closest(".case"); if(!card) return;
+     location.hash=D.cases[+card.dataset.i].case_id;
+     openCase(+card.dataset.i);
+   });
+ }
+ function openCase(i){
+   stopTimers(); current=D.cases[i]; filter="全部"; query=""; shown=25;
+   $("home").classList.add("off"); $("detail").classList.add("on");
+   $("crumbText").textContent=`${current.case_id} · ${current.subject}`;
+   window.scrollTo(0,0);
+   const c=current;
+   $("hero").innerHTML=`<h2>${esc(c.case_id)} · ${esc(c.subject)}</h2>
+     <div class="meta">${esc(c.entity_type)}主体 · ${c.hit_count} 条 LN 命中 · 4 workers 并行 · 所有结论均为未经审批的草稿</div>
+     <div class="hero-grid">
+       <div><b>${c.hit_count}</b><span>命中记录</span></div>
+       <div><b>${c.engine_ms.toFixed(0)} ms</b><span>引擎累计耗时</span></div>
+       <div><b>${c.wall_ms.toFixed(0)} ms</b><span>4 workers 并行墙钟</span></div>
+       <div><b>${c.mean_ms_per_hit.toFixed(1)} ms</b><span>单条命中平均</span></div>
+     </div>${stack(c.conclusion_distribution)}${legend(c.conclusion_distribution)}`;
+   const p=c.profile;
+   $("profile").innerHTML=`<h3>主体画像 · ${esc(c.entity_type)}主体
+       <span class="pill p-clear">${esc(p.connector)} · 字段结构</span></h3>
+     <div class="src">${esc(p.note)}　连接器工具：${p.tools.map(esc).join(" / ")}</div>
+     <div class="fields">${p.display.map(f=>`<div><span>${esc(f.label)}</span><b>${esc(f.value)}</b></div>`).join("")}</div>
+     <div class="scan"><b>${esc(p.risk_scan.label)}</b>：共 ${p.risk_scan.dimensions} 项维度，${p.risk_scan.zero_hit} 项 0 命中${p.risk_scan.nonzero.length?"；有记录："+p.risk_scan.nonzero.map(x=>esc(x.name)+" "+x.count+" 条").join("、"):"；全部维度 0 命中"}。<b>0 命中仅代表结构化维度当前无记录，不等于主体无风险</b>（连接器口径，须并行核对舆情）。</div>`;
+   $("filter").innerHTML=["全部",...ORDER].map(k=>`<button data-k="${k}" class="${k==="全部"?"on":""}">${k}</button>`).join("");
+   $("search").value="";
+   renderHits(true);
+ }
+ $("back").onclick=()=>{stopTimers();history.replaceState(null,"",location.pathname+location.search);$("detail").classList.remove("on");$("home").classList.remove("off");window.scrollTo(0,0);};
+ $("filter").addEventListener("click",e=>{
+   const b=e.target.closest("button"); if(!b)return;
+   filter=b.dataset.k; [...$("filter").children].forEach(x=>x.classList.toggle("on",x===b));
+   shown=25; renderHits(true);
+ });
+ $("search").oninput=e=>{query=e.target.value.trim().toLowerCase();shown=25;renderHits(true);};
+ $("more").onclick=()=>{shown+=25;renderHits(false);};
+
+ function visibleHits(){
+   return current.hits.filter(h=>(filter==="全部"||h.conclusion===filter)&&
+     (!query||(h.name+" "+h.source_domain+" "+h.hit_id).toLowerCase().includes(query)));
+ }
+ function renderHits(reset){
+   if(reset) $("hits").innerHTML="";
+   const all=visibleHits(), slice=all.slice(0,shown);
+   $("shown").textContent=`显示 ${Math.min(shown,all.length)} / ${all.length} 条`+
+     (filter!=="全部"?" · 已筛选":"");
+   $("more").style.display=shown<all.length?"block":"none";
+   $("more").textContent=`加载更多命中（还有 ${Math.max(0,all.length-shown)} 条）`;
+   // re-render whole visible slice to keep progress state readable
+   $("hits").innerHTML=slice.map((h,i)=>`
+     <div class="hit" data-key="${esc(h.hit_id)}" data-p="${esc(h.path.join("|"))}">
+       <div class="r1">
+         <span class="idx">#${String(i+1).padStart(2,"0")}</span>
+         <span class="nm">${esc(h.name)}</span>
+         <span class="chip">${esc(h.category)}</span>
+         <span class="chip">分数 ${h.ln_score}</span>
+         <span class="pill ${PILL[h.conclusion]}">${esc(h.conclusion)}</span>
+       </div>
+       <div class="r2">
+         <div><div class="steps">${h.stages.map(()=>"<i></i>").join("")}</div>
+              <div class="phase">已完成 · ${esc(h.path[h.path.length-1])}</div></div>
+         <span class="phase">${esc(h.source_domain)}</span>
+         <span class="ms">${h.duration_ms.toFixed(1)} ms</span>
+       </div>
+       <div class="reason"><b>核查说明：</b>${esc(h.reason)}<br>
+         <b>来源：</b>${esc(h.source_domain)} 等 ${h.source_count} 条记录源 · LN 记录号 ${esc(h.ln_id)} · ${esc(h.conclusion_status)}
+         <div class="path">${h.path.map(p=>`<i>${esc(p)}</i>`).join("")}</div></div>
+     </div>`).join("");
+   [...$("hits").querySelectorAll(".steps")].forEach(el=>el.querySelectorAll("i").forEach(i=>i.classList.add("on")));
+ }
+ $("hits").addEventListener("click",e=>{
+   const row=e.target.closest(".hit"); if(row) row.classList.toggle("open");
+ });
+ function stopTimers(){timers.forEach(clearTimeout);timers=[];running=false;$("runall").disabled=false;$("runcase").disabled=false;$("runall").textContent="▶ 运行一遍 Demo";$("runcase").textContent="▶ 运行本工单";}
+ function animate(){
+   if(running)return; running=true; timers.forEach(clearTimeout); timers=[];
+   $("runall").disabled=true;$("runcase").disabled=true;
+   $("runall").textContent="运行中…";$("runcase").textContent="运行中…";
+   const cards=[...$("cases").children];
+   cards.forEach((card,i)=>{card.querySelector(".progress").style.width="0%";});
+   cards.forEach((card,i)=>{
+     const total=Math.min(2600,700+i*130);
+     for(let s=1;s<=10;s++){
+       timers.push(setTimeout(()=>{card.querySelector(".progress").style.width=(s*10)+"%";},total/10*s));
+     }
+   });
+   timers.push(setTimeout(()=>{
+     cards.forEach(c=>{const f=c.querySelector(".foot .pill"); if(f){f.textContent="已完成 · 结论草稿";}});
+     stopTimers();
+   },Math.min(2600,700+(cards.length-1)*130)+120));
+   if($("detail").classList.contains("on")) runDetail();
+ }
+ function runDetail(){
+   const rows=[...$("hits").querySelectorAll(".hit")];
+   rows.forEach(r=>r.querySelectorAll(".steps i").forEach(i=>i.classList.remove("on")));
+   rows.forEach((row,idx)=>{
+     for(let s=1;s<=5;s++){
+       timers.push(setTimeout(()=>{
+         const bars=row.querySelectorAll(".steps i");
+         for(let k=0;k<s;k++) if(bars[k]) bars[k].classList.add("on");
+         const ph=row.querySelector(".phase"); if(ph) ph.textContent=["排队中","规则核验","调查取证","结论草稿","已完成"][s-1];
+       },60+idx*45+s*85));
+     }
+   });
+ }
+ $("runall").onclick=animate;
+ $("runcase").onclick=()=>{
+   if(running)return; running=true; timers.forEach(clearTimeout);timers=[];
+   $("runcase").disabled=true;$("runcase").textContent="运行中…";
+   runDetail();
+   const last=60+Math.min(shown,visibleHits().length)*45+5*85;
+   timers.push(setTimeout(stopTimers,last+150));
+ };
+ $("theme").onclick=()=>{
+   const dark=document.documentElement.dataset.theme==="dark";
+   document.documentElement.dataset.theme=dark?"light":"dark";
+   $("theme").textContent=dark?"切换深色":"切换浅色";
+ };
+ renderKpis();renderCases();
+ // Deep link: demo.html#SYN-LN-2602 opens that checklist directly, useful for
+ // sharing a large-hit example and for documentation screenshots.
+ const wanted=decodeURIComponent(location.hash.replace(/^#/,""));
+ const at=D.cases.findIndex(c=>c.case_id===wanted);
+ if(at>=0) openCase(at);
+ // One-click link for reviewers: ?autorun=1 starts the parallel simulation as
+ // soon as the page opens (optionally combined with a case hash).
+ if(new URLSearchParams(location.search).get("autorun")==="1"){
+   timers.push(setTimeout(animate,350));
+ }
+})();
+</script>
+</body>
+</html>
+"""
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true", help="validate only, do not write")
+    args = ap.parse_args()
+    payload = build()
+    _assert_synthetic(payload)
+    data = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    if args.check:
+        print(f"synthetic OK: {payload['totals']['cases']} cases, "
+              f"{payload['totals']['hits']} hits, {len(data)} bytes")
+        return
+    OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
+    OUT_HTML.write_text(HTML.replace("__DEMO_DATA__", data.replace("</", "<\\/")),
+                        encoding="utf-8")
+    OUT_INDEX.write_text(INDEX_HTML, encoding="utf-8")
+    print(f"wrote {OUT_JSON.relative_to(ROOT)} ({OUT_JSON.stat().st_size} bytes)")
+    print(f"wrote {OUT_HTML.relative_to(ROOT)} ({OUT_HTML.stat().st_size} bytes)")
+    print(f"wrote {OUT_INDEX.relative_to(ROOT)} ({OUT_INDEX.stat().st_size} bytes)")
+
+
+if __name__ == "__main__":
+    main()

@@ -83,10 +83,12 @@ class PublicReplaySafetyTests(unittest.TestCase):
         embedded = json.loads(match.group(1).replace("<\\/", "</"))
         self.assertEqual(embedded, _payload())
 
-    def test_pages_entry_redirects_to_the_replay(self):
+    def test_pages_entry_opens_the_demo_and_still_links_the_replay(self):
         html = INDEX_HTML.read_text(encoding="utf-8")
-        self.assertIn("url=replay.html", html)
+        self.assertIn("url=demo.html", html)
+        self.assertIn('href="demo.html"', html)
         self.assertIn('href="replay.html"', html)
+        self.assertIn("demo.html?autorun=1", html)
         self.assertFalse((ROOT / "docs" / "replay.html").exists(),
                          "stale duplicate replay page must not be published")
 
