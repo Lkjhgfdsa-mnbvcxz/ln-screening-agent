@@ -11,6 +11,7 @@ from .tools import InvestigationAgent
 from .suspicion import SuspicionAgent
 from .skills import get_skill, ordered_queries
 from .skill_catalog import select_skills
+from .tool_catalog import tool_for_source_key
 from .fact_verification import FactVerifier
 from .corroboration import assess_corroboration
 from .risk_gate import RiskGate
@@ -58,6 +59,7 @@ class DecisionRouter:
             raise PolicyViolation("data ingest rejected: "+check.reason)
         history=[];done_keys=set();actions=[];tried_actions=[];evidence_of_attempt=[]
         doc_evidence=[];hit_evidence_links=[];verification_records=[];valid_verification_ids=set()
+        research_facts=[]  # full sourced Fact records acquired during bounded research
         # Q0: gate flags are computed BEFORE evaluating exclusion candidates and
         # are immutable for this run, regardless of which branch eventually returns.
         _t=perf_counter()
@@ -131,7 +133,7 @@ class DecisionRouter:
                 disposition=build_disposition(case=case,subject=subject,hit=hit,
                     evidence=result,route=route,identity=identity,
                     suspicion=suspicion,policy=self.policy,gate=final_gate_dict,
-                    evidence_refs=list(result.anchors))
+                    evidence_refs=list(result.anchors),hit_facts=facts)
                 self.guard.validate_disposition_draft(disposition)
                 emit("POLICY_CHECK", "policy", check="disposition", allowed=True)
                 # A first-class deterministic internal Tool backed by an
@@ -161,6 +163,7 @@ class DecisionRouter:
                     document_evidence=list(doc_evidence),
                     hit_evidence_links=list(hit_evidence_links),
                     verification_records=list(verification_records),
+                    research_facts=list(research_facts),
                     corroboration=[x.to_dict() for x in corroboration],
                     rule_findings=rule_findings,
                     gate=final_gate_dict,
@@ -199,7 +202,7 @@ class DecisionRouter:
             remaining=ordered_queries(skill,[x for x in hit.research_keys if x not in done_keys])
             if remaining and len(done_keys)<self.policy.max_research_actions_per_hit:
                 key=remaining[0]
-                tool_name="document_intelligence" if key.startswith("doc:") else "fixture_research"
+                tool_name=tool_for_source_key(key)
                 _t=perf_counter()
                 gate_check=self.guard.check_tool_call(tool_name,key,skill,len(done_keys))
                 emit("TOOL_AUTHORIZED", "policy", tool=tool_name, action_key=key,
@@ -214,16 +217,18 @@ class DecisionRouter:
                 emit("TOOL_STARTED", "investigation", tool=tool_name, action_key=key,
                      skill_id=skill["id"])
                 _tool_started=perf_counter()
-                execution_path.append({"action":"INVESTIGATE","key":key,"tool":tool_name})
+                execution_path.append({"action":"INVESTIGATE","key":key,"tool":tool_name,
+                                       "skill":skill["id"]})
                 actions.append(f"RESEARCH_QUERY:{key}")
-                tried_actions.append({"action":key,"outcome":"attempted"})
+                tried_actions.append({"action":key,"tool":tool_name,"outcome":"attempted"})
                 try:
                     subject_queries=[f.value for f in subject.facts if f.field in
                                      ("name","company_name","registration_number","document_number")]
                     hit_queries=[f.value for f in facts if f.field in
                                  ("name","company_name","registration_number")]
-                    outcome=self.investigator.investigate_with_evidence(key,subject_queries+hit_queries)
-                    new_facts=self.guard.validate_facts(outcome.facts,skill)
+                    outcome=self.investigator.investigate_with_evidence(
+                        key,subject_queries+hit_queries,tool_name=tool_name)
+                    new_facts=self.guard.validate_facts(outcome.facts,skill,tool_name=tool_name)
                     emit("TOOL_FINISHED", "investigation", tool=tool_name, action_key=key,
                          fact_count=len(new_facts), document_count=len(outcome.document_packets),
                          duration_ms=(perf_counter()-_tool_started)*1000)
@@ -246,6 +251,8 @@ class DecisionRouter:
                 before={(f.evidence_id,f.field,f.value) for f in facts}
                 accepted=[f for f in new_facts if (f.evidence_id,f.field,f.value) not in before]
                 facts.extend(accepted)
+                research_facts.extend({"source_tool":tool_name,"action_key":key,
+                                       **f.to_dict()} for f in accepted)
                 emit("FACTS_RECEIVED", "evidence", candidates=len(accepted),
                      evidence_ids=[f.evidence_id for f in accepted][:12])
                 tried_actions[-1]["outcome"]="completed"
@@ -264,6 +271,8 @@ class DecisionRouter:
                     emit("FACT_VERIFICATION", "evidence", document_id=packet["document_id"],
                          reviewed=len(verified.verification_records), accepted=len(verified.verified_facts))
                     facts.extend(verified.verified_facts)
+                    research_facts.extend({"source_tool":"fact_verification","action_key":key,
+                                           **f.to_dict()} for f in verified.verified_facts)
                     for span in packet["evidence_spans"]:
                         hit_evidence_links.append({
                           "case_id":case.case_id,"hit_id":hit.hit_id,
@@ -287,7 +296,9 @@ class DecisionRouter:
                         "material_leads":packet["coverage"]["material_leads"]
                     })
                 if not outcome.document_packets:
-                    evidence_of_attempt.append({"action":key,"received_fact_count":len(accepted)})
+                    evidence_of_attempt.append({"action":key,"tool":tool_name,
+                                                "received_fact_count":len(accepted),
+                                                "evidence_ids":[f.evidence_id for f in accepted][:12]})
                 continue
             # A plausible, high-impact document fact awaiting provenance/attribution
             # verification is NOT equivalent to exhausted identity research.

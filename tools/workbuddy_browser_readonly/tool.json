@@ -1,0 +1,20 @@
+{
+  "id": "workbuddy_browser_readonly",
+  "title": "WorkBuddy 已登录浏览器只读结构化采集",
+  "status": "implemented_authorized_local",
+  "runtime_entrypoint": "ln_agent.workbuddy_adapters.BrowserSnapshotTool.query",
+  "allowed_prefixes": [
+    "boss"
+  ],
+  "network": false,
+  "local_only": true,
+  "writes_external": false,
+  "read_only": true,
+  "authorization": "仅在授权工作站使用；采集包由 WorkBuddy 从已登录标签页只读提取后本地暂存，适配器自身不打开任何 URL",
+  "allowed_fact_origins": [
+    "ln_structured",
+    "official_primary"
+  ],
+  "purpose": "读取本地暂存的 BOSS 页面结构化命中记录，输出带 evidence_id 的 LN 结构化事实；脱敏值不得作为身份级事实",
+  "facts_must_be_unchecked": false
+}

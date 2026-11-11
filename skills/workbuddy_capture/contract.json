@@ -1,0 +1,27 @@
+{
+  "id": "SKILL_WORKBUDDY_CAPTURE_V1",
+  "version": "1.0",
+  "scope": "authorized_local_capture",
+  "trigger_prefixes": [
+    "boss:",
+    "model:"
+  ],
+  "allowed_tool_names": [
+    "workbuddy_browser_readonly",
+    "workbuddy_llm_capture"
+  ],
+  "output": [
+    "structured_fact_candidates",
+    "attempt_log",
+    "source_evidence_record"
+  ],
+  "prohibited_shortcuts": [
+    "把模型抽取结果当作已核实事实",
+    "把脱敏号码当成完整证件号",
+    "由模型输出误报/命中/上报结论",
+    "把历史人审结论注入规则引擎事实",
+    "因信息不足自动创建人工调查队列"
+  ],
+  "read_only": true,
+  "runtime_role": "auxiliary_capture_only"
+}

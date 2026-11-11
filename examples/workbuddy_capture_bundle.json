@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "disclaimer": "SYNTHETIC ONLY. This file mimics the shape of an authorized local capture bundle. No real merchant, identity document or internal URL is present.",
+  "captured_at": "2026-11-11T00:00:00+08:00",
+  "records": {
+    "boss:SYN-WB-CAPTURE-001:H1": {
+      "capture_id": "SYN-CAP-H1",
+      "captured_at": "2026-11-11T00:00:00+08:00",
+      "source_url": "synthetic://boss-detail/SYN-WB-CAPTURE-001 (display only, never fetched)",
+      "facts": [
+        {"side": "hit", "field": "dob", "value": "1979-11-03", "evidence_id": "SYN-WB-CAPTURE-001:H1:ln:dob", "origin": "ln_structured", "checked": true, "source_url": "synthetic://ln-record/H1"}
+      ]
+    },
+    "model:SYN-WB-CAPTURE-001:H1": {
+      "source_url": "synthetic://ln-record/H1",
+      "excerpt": "Synthetic enforcement digest: a person named Lin Wei was mentioned in a 2015 article. No birth date, document number or position is stated.",
+      "extractions": [
+        {"field": "acted_in_year", "value": "2015", "context": "PUBLICATION_YEAR_NOT_AN_ACTION_YEAR"}
+      ]
+    },
+    "boss:SYN-WB-CAPTURE-001:H2": {
+      "capture_id": "SYN-CAP-H2",
+      "captured_at": "2026-11-11T00:00:00+08:00",
+      "source_url": "synthetic://boss-detail/SYN-WB-CAPTURE-001 (display only, never fetched)",
+      "facts": [
+        {"side": "hit", "field": "region", "value": "Shanghai", "evidence_id": "SYN-WB-CAPTURE-001:H2:ln:region", "origin": "ln_structured", "checked": true, "source_url": "synthetic://ln-record/H2"}
+      ]
+    },
+    "model:SYN-WB-CAPTURE-001:H2": {
+      "source_url": "synthetic://ln-record/H2",
+      "excerpt": "Synthetic media digest: a Lin Wei was mentioned alongside a 2016 shipping bureau notice. The text does not state that this is the same person.",
+      "extractions": [
+        {"field": "acted_in_year", "value": "2016", "context": "PUBLICATION_YEAR_NOT_AN_ACTION_YEAR"},
+        {"field": "company_name", "value": "Synthetic Shipping Bureau", "context": "MODEL_FIELD:organization"}
+      ]
+    },
+    "boss:SYN-WB-CAPTURE-001:H3": {
+      "capture_id": "SYN-CAP-H3",
+      "captured_at": "2026-11-11T00:00:00+08:00",
+      "source_url": "synthetic://boss-detail/SYN-WB-CAPTURE-001 (display only, never fetched)",
+      "facts": [
+        {"side": "hit", "field": "registration_number", "value": "91310000SYNTH00017", "evidence_id": "SYN-WB-CAPTURE-001:H3:ln:reg", "origin": "ln_structured", "checked": true, "context": "COMPANY_REGISTRY", "source_url": "synthetic://registry/H3"}
+      ]
+    },
+    "model:SYN-WB-CAPTURE-001:H3": {
+      "source_url": "synthetic://ln-record/H3",
+      "excerpt": "Synthetic sanctions digest: entity name only; no registration number is repeated in this text.",
+      "extractions": [
+        {"field": "company_name", "value": "Synthetic Horizon Trading", "context": "MODEL_FIELD:organization"}
+      ]
+    }
+  }
+}

@@ -12,6 +12,13 @@ _ALIASES = {
     "pep": "pep", "politically exposed person": "pep",
     "adverse media": "adverse_media", "adverse_media": "adverse_media",
     "other": "other",
+    # BOSS/LN pages render provider categories in Chinese. Without these
+    # aliases the Risk Gate and reportable-category checks silently miss every
+    # sanctions/enforcement hit from a real checklist.
+    "制裁": "sanctions", "执法": "enforcement", "执法行动": "enforcement",
+    "政治公众人物": "pep", "政要": "pep",
+    "负面新闻": "adverse_media", "不利媒体": "adverse_media",
+    "其他": "other",
 }
 
 def risk_categories(raw: str) -> tuple[str, ...]:

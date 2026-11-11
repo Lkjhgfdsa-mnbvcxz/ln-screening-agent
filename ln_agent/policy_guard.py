@@ -83,7 +83,13 @@ class PolicyGuard:
         if prefix not in skill["allowed_research_sources"]:
             raise PolicyViolation(f"research source not allowed by skill contract: {prefix}")
 
-    def validate_facts(self, facts:list[Fact],skill:dict)->list[Fact]:
+    def validate_facts(self, facts:list[Fact],skill:dict,*,tool_name:str|None=None)->list[Fact]:
+        # Manifest-driven capability fence: a tool may only emit the origins its
+        # own tool.json declares, and an unchecked-output tool cannot smuggle in
+        # checked facts. This is enforced here, at the only ingestion boundary.
+        spec = load_tool(tool_name) if tool_name else None
+        allowed_origins = frozenset(spec.get("allowed_fact_origins", [])) if spec else None
+        must_be_unchecked = bool(spec and spec.get("facts_must_be_unchecked"))
         result=[]
         for f in facts:
             if f.side!="hit":raise PolicyViolation("sub-agent cannot add applicant facts")
@@ -93,6 +99,10 @@ class PolicyGuard:
                 raise PolicyViolation(f"field not allowed by skill contract: {f.field}")
             if f.origin=="model_extracted" and f.checked:
                 raise PolicyViolation("model output cannot self-verify")
+            if allowed_origins and f.origin not in allowed_origins:
+                raise PolicyViolation(f"tool {tool_name} cannot emit origin {f.origin}")
+            if must_be_unchecked and f.checked:
+                raise PolicyViolation(f"tool {tool_name} must emit unchecked candidates")
             result.append(f)
         return result
 

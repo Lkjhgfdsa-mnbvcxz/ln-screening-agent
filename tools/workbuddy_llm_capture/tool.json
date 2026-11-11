@@ -1,0 +1,21 @@
+{
+  "id": "workbuddy_llm_capture",
+  "title": "WorkBuddy 会话内大模型事实抽取（本地 staged transport）",
+  "status": "implemented_authorized_local",
+  "runtime_entrypoint": "ln_agent.workbuddy_adapters.LLMCaptureTool.query",
+  "allowed_prefixes": [
+    "model"
+  ],
+  "network": false,
+  "local_only": true,
+  "writes_external": false,
+  "read_only": true,
+  "sends_document_text": false,
+  "authorization": "会话内模型按项目 SYSTEM_INSTRUCTION 抽取，结果本地暂存；staged transport 不出网、不调用外部 API",
+  "allowed_fact_origins": [
+    "model_extracted"
+  ],
+  "facts_must_be_unchecked": true,
+  "purpose": "经 LLMExtractionAdapter + validate_extraction 输出未经核实的候选事实，永不作为硬证据或审核结论",
+  "implementation": "ln_agent.llm_adapter.LLMExtractionAdapter"
+}

@@ -1,0 +1,63 @@
+{
+  "case_id": "SYN-WB-CAPTURE-001",
+  "notes": "完全虚构的合成案例：演示 WorkBuddy 本地采集 Skill + 两个授权 Tool 接入既有审核链路。不含任何真实商户、证件或内部链接。",
+  "context": {
+    "application_ref": "SYN-APP-WB-001"
+  },
+  "subjects": [
+    {
+      "subject_id": "SYN-SUBJ-PERSON",
+      "entity_type": "person",
+      "role": "applicant",
+      "facts": [
+        {"side": "applicant", "field": "name", "value": "Lin, Wei", "evidence_id": "SYN-WB-CAPTURE-001:app:name", "origin": "kyb_verified", "checked": true},
+        {"side": "applicant", "field": "dob", "value": "1985-04-12", "evidence_id": "SYN-WB-CAPTURE-001:app:dob", "origin": "kyb_verified", "checked": true},
+        {"side": "applicant", "field": "document_number", "value": "SYNTH-ID-19850412-0011", "evidence_id": "SYN-WB-CAPTURE-001:app:id", "origin": "kyb_verified", "checked": true, "context": "CN_NATIONAL_ID"}
+      ]
+    },
+    {
+      "subject_id": "SYN-SUBJ-COMPANY",
+      "entity_type": "company",
+      "role": "applicant",
+      "facts": [
+        {"side": "applicant", "field": "company_name", "value": "Synthetic Horizon Trading Co., LTD", "evidence_id": "SYN-WB-CAPTURE-001:app:company", "origin": "kyb_verified", "checked": true},
+        {"side": "applicant", "field": "registration_number", "value": "91310000SYNTH00017", "evidence_id": "SYN-WB-CAPTURE-001:app:reg", "origin": "kyb_verified", "checked": true, "context": "COMPANY_REGISTRY"}
+      ]
+    }
+  ],
+  "hits": [
+    {
+      "hit_id": "H1",
+      "subject_id": "SYN-SUBJ-PERSON",
+      "category": "enforcement",
+      "entity_type": "person",
+      "facts": [
+        {"side": "hit", "field": "name", "value": "Lin, Wei", "evidence_id": "SYN-WB-CAPTURE-001:H1:ln:name", "origin": "ln_structured", "checked": true}
+      ],
+      "research_keys": ["boss:SYN-WB-CAPTURE-001:H1", "model:SYN-WB-CAPTURE-001:H1"],
+      "notes": "浏览器采集补全出生日期后产生可靠冲突候选"
+    },
+    {
+      "hit_id": "H2",
+      "subject_id": "SYN-SUBJ-PERSON",
+      "category": "adverse_media",
+      "entity_type": "person",
+      "facts": [
+        {"side": "hit", "field": "name", "value": "Lin, Wei", "evidence_id": "SYN-WB-CAPTURE-001:H2:ln:name", "origin": "ln_structured", "checked": true}
+      ],
+      "research_keys": ["boss:SYN-WB-CAPTURE-001:H2", "model:SYN-WB-CAPTURE-001:H2"],
+      "notes": "两类采集都只产生软信号，模型事实不得形成业务结论"
+    },
+    {
+      "hit_id": "H3",
+      "subject_id": "SYN-SUBJ-COMPANY",
+      "category": "sanctions",
+      "entity_type": "company",
+      "facts": [
+        {"side": "hit", "field": "company_name", "value": "Synthetic Horizon Trading Co., LIMITED", "evidence_id": "SYN-WB-CAPTURE-001:H3:ln:name", "origin": "ln_structured", "checked": true}
+      ],
+      "research_keys": ["boss:SYN-WB-CAPTURE-001:H3", "model:SYN-WB-CAPTURE-001:H3"],
+      "notes": "企业注册号完全一致的强关联候选；法律后缀 LTD/LIMITED 等价"
+    }
+  ]
+}

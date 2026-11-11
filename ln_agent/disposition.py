@@ -27,7 +27,12 @@ def _first(facts, field):
     return next((f for f in facts if f.field == field and f.value), None)
 
 
-def _identity_signals(subject: Subject, hit: Hit, evidence: EvidenceResult) -> tuple[list[str], list[str]]:
+def _identity_signals(subject: Subject, hit: Hit, evidence: EvidenceResult,
+                      hit_facts: list | None = None) -> tuple[list[str], list[str]]:
+    # Use ALL facts known at disposition time, including facts acquired during
+    # bounded research. Using only hit.facts hides the decisive difference when
+    # e.g. a DOB conflict was discovered by an authorized source adapter.
+    current_facts = hit.facts if hit_facts is None else hit_facts
     matches: list[str] = []
     differences: list[str] = []
     rules = set(evidence.linked_rules)
@@ -41,7 +46,7 @@ def _identity_signals(subject: Subject, hit: Hit, evidence: EvidenceResult) -> t
         matches.insert(0, "企业名称一致" if hit.entity_type == "company" else "姓名一致")
     for kind, caption in (("registered_address", "注册地址"), ("residential_address", "居住地址"),
                           ("address", "地址")):
-        a, b = _first(subject.facts, kind), _first(hit.facts, kind)
+        a, b = _first(subject.facts, kind), _first(current_facts, kind)
         if not a or not b or a.context != b.context or not a.context:
             continue
         if norm(a.value) != norm(b.value):
@@ -51,7 +56,7 @@ def _identity_signals(subject: Subject, hit: Hit, evidence: EvidenceResult) -> t
             differences.append(f"{semantic_label}不一致")
             break
     if "DOB_EXACT_CONFLICT" in evidence.exclusion_rules:
-        a, b = _first(subject.facts, "dob"), _first(hit.facts, "dob")
+        a, b = _first(subject.facts, "dob"), _first(current_facts, "dob")
         if a and b:
             differences.append(f"出生日期不同（入网{a.value}，LN {b.value}）")
     if "DOCUMENT_DIFFERENCE_NEEDS_HISTORY_VERIFICATION" in evidence.data_issues:
@@ -81,9 +86,10 @@ def _risk_event(hit: Hit) -> tuple[str, str, list[str]]:
 def build_disposition(*, case: Case, subject: Subject, hit: Hit,
                       evidence: EvidenceResult, route: str, identity: str,
                       suspicion: dict | None, policy: Policy, gate: dict,
-                      evidence_refs: list[str]) -> dict:
+                      evidence_refs: list[str],
+                      hit_facts: list | None = None) -> dict:
     """Generate concise drafts from existing deterministic findings only."""
-    matches, differences = _identity_signals(subject, hit, evidence)
+    matches, differences = _identity_signals(subject, hit, evidence, hit_facts)
     risk_summary, severity, event_refs = _risk_event(hit)
     # Preserve all provider labels; they are not themselves the legal source's regime.
     risk_type = "/".join(dict.fromkeys(CATEGORY_CN.get(c, c) for c in risk_categories(hit.category)))

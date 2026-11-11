@@ -122,6 +122,9 @@ class Decision:
     document_evidence: list[dict[str, Any]] = field(default_factory=list)
     hit_evidence_links: list[dict[str, Any]] = field(default_factory=list)
     verification_records: list[dict[str, Any]] = field(default_factory=list)
+    # Full provenance of facts acquired during bounded research (source tool,
+    # action key, origin, checked state, evidence_id, source_url). Read-only.
+    research_facts: list[dict[str, Any]] = field(default_factory=list)
     corroboration: list[dict[str, Any]] = field(default_factory=list)
     # Integration additions: computed from actual runtime decisions, never from README text.
     rule_findings: list[dict[str, Any]] = field(default_factory=list)

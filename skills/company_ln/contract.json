@@ -14,7 +14,9 @@
     "official",
     "doc",
     "qcc",
-    "web"
+    "web",
+    "boss",
+    "model"
   ],
   "allowed_research_sources": [
     "ln",
@@ -22,7 +24,9 @@
     "official",
     "doc",
     "qcc",
-    "web"
+    "web",
+    "boss",
+    "model"
   ],
   "blocked_exclusion_fields": [
     "address",
@@ -37,7 +41,9 @@
   "entity_type": "company",
   "allowed_tool_names": [
     "fixture_research",
-    "document_intelligence"
+    "document_intelligence",
+    "workbuddy_browser_readonly",
+    "workbuddy_llm_capture"
   ],
   "read_only": true,
   "runtime_role": "primary_identity_investigation"

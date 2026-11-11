@@ -12,7 +12,7 @@ company_name, registration_number, jurisdiction, address, director, owner
 
 ## 建议查询顺序
 
-ln → registry → official → doc → qcc → web。真实外部接口未连接，当前使用模拟研究数据/本地文档。
+ln → registry → official → doc → qcc → web → boss → model。真实外部接口未连接，当前使用模拟研究数据/本地文档；`boss:`/`model:` 仅授权本地环境显式开启，详见 `skills/workbuddy_capture/`。
 
 ## 不得依据以下字段单独排除
 

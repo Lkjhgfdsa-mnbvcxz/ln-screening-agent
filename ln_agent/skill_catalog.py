@@ -8,7 +8,8 @@ import json
 
 ROOT = Path(__file__).resolve().parents[1] / "skills"
 PRIMARY = {"person": "person_ln", "company": "company_ln", "address": "address_ln"}
-ADDITIONAL = {"document_intelligence", "source_recovery", "residual_suspicion", "disposition_reporting"}
+ADDITIONAL = {"document_intelligence", "source_recovery", "residual_suspicion",
+              "disposition_reporting", "workbuddy_capture"}
 
 
 def load_skill(skill_slug: str, *, root: Path | None = None) -> dict:
@@ -34,6 +35,8 @@ def select_skills(entity_type: str, research_keys: list[str] | tuple[str, ...] =
         slugs.append("document_intelligence")
     if any(k.startswith(("ln:", "official:", "web:")) for k in research_keys):
         slugs.append("source_recovery")
+    if phase == "investigation" and any(k.startswith(("boss:", "model:")) for k in research_keys):
+        slugs.append("workbuddy_capture")
     if phase == "suspicion":
         slugs.append("residual_suspicion")
     if phase == "disposition":

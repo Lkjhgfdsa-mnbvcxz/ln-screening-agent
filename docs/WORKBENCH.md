@@ -9,6 +9,8 @@ python3 run.py web --port 8766 # 自定义端口
 
 直接访问 `http://127.0.0.1:8765`。默认不联网、不调用 LLM；仅可选择仓库内的虚构案例。
 
+案例下拉中的 **「WorkBuddy 本地采集 · 合成回放」** 使用 `examples/workbuddy_capture_bundle.json`（纯合成本地暂存包），演示两个授权本地 Tool 通过既有 `SKILL_SELECTED → TOOL_AUTHORIZED → TOOL_STARTED/TOOL_FINISHED → FACTS_RECEIVED → RULE_EVALUATED` 链路接入；该案例由工作台内部调用 `authorized_policy()` 显式开启工具，其他案例仍使用默认离线 Policy。
+
 ## 真实数据通路（不是 AI 自述进度）
 
 1. `POST /api/runs`：选定合成 fixture，创建 `RunRecord`；后台运行 `Orchestrator.run(max_workers=N)`。
@@ -44,3 +46,12 @@ python3 run.py web --port 8766 # 自定义端口
 ## 业务结论显示（V0.9.2）
 
 首页及单条命中顶部仅显示 `disposition.business_conclusion`：**未命中、疑似命中、命中**。当前尚无充分依据形成业务结论时显示 `—`，另提示未形成结论；这不是第四类业务结论。内部路由、引擎评分、规则来源仍在「查看证据来源与执行细节」折叠区和实时事件面板。历史结论独立呈现，不能覆盖新判断。JSON 原样保留全部技术字段及新增业务结论字段。
+
+## 静态回放（V0.9.3）
+
+没有 Python 环境的访问者可以直接打开仓库根目录的 `replay.html`，或用 GitHub Pages 在线查看。它把 `examples/workbuddy_capture_replay.json` 中已录制的一次合成案例真实执行事件做成可播放时间线，**不替代**这里的实时 SSE 工作台：
+
+- 工作台：本地起服务、实际并行跑案例、事件边产生边推送。
+- 静态回放：事件已录制、单文件离线播放、只含合成数据，供公开演示与评审查看。
+
+两者共用同一套事件字段与业务结论结构。用 `python3 scripts/build_replay.py --tests 203` 重新生成回放；生成器只读取 `examples/` 下的合成输入，绝不读取授权环境里的真实采集包。

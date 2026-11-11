@@ -1,6 +1,6 @@
 # Skills · 核验能力与运行时契约
 
-此目录包括 **7 个专项 Skill**。每个 Skill 都有三个文件：
+此目录包括 **8 个专项 Skill**（7 个原有 + 1 个授权本地采集辅助 Skill）。每个 Skill 都有三个文件：
 
 - **`README.md`**：面向开发、审核及交接人员——功能、输入输出、调用方式、示例、限制和运行状态。
 - **`SKILL.md`**：调查策略和领域方法，供 Agent/开发人员阅读；不是获批准的审核制度。
@@ -15,6 +15,7 @@
 | [source_recovery](source_recovery/README.md) | 失效来源、替代来源线索 | `ln:`/`official:`/`web:` | 只能读取离线 fixture；未联网 |
 | [residual_suspicion](residual_suspicion/README.md) | 身份未定时证据充分性/可疑度建议 | `phase=suspicion` | 演示权重，仅建议，无放行权 |
 | [disposition_reporting](disposition_reporting/README.md) | 生成简洁内部说明与疑似命中上报草稿 | 每条命中收口 | 确定性代码运行，来源关联，不自动发送 |
+| [workbuddy_capture](workbuddy_capture/README.md) | 已登录浏览器只读采集 + 会话内模型结构化抽取 | `boss:` / `model:` | **辅助契约**；仅授权本地显式开启，模型事实恒为 `checked=false` |
 
 **运行时边界：** 主 Agent 通过 `select_skills(entity_type, research_keys, phase)` 选择契约；`PolicyGuard` 对当前可执行工具进行实际拦截，但某些自然语言禁令仍是领域指导，**不能将其视为每条均已经编译为硬校验**。后续修改 `contract.json` 必须增加对应测试。
 

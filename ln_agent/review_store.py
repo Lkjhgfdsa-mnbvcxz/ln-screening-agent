@@ -10,7 +10,7 @@ attestations historical without deleting them or accepting them in the new
 revision. Not yet a resumable *mid-investigation* task scheduler.
 """
 from __future__ import annotations
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from dataclasses import asdict
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -256,5 +256,7 @@ class ReviewStore:
         """WAL-consistent SQLite online backup; no raw .db file copy."""
         target=Path(destination)
         target.parent.mkdir(parents=True,exist_ok=True)
-        with self._connect() as source, sqlite3.connect(str(target)) as dest:
+        # sqlite3.Connection as a context manager only scopes a transaction;
+        # it does NOT close the handle. Keep backup() free of leaked handles.
+        with self._connect() as source, closing(sqlite3.connect(str(target))) as dest:
             source.backup(dest)

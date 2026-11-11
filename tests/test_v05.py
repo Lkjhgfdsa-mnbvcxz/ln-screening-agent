@@ -1,11 +1,13 @@
 """V0.5 independent source corroboration, durable review, REOPEN and boundaries.
 All sources, authorizations, people and cases are synthetic.
 """
+from contextlib import closing
 import json
 from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from ln_agent import Case, Policy
 from ln_agent.corroboration import assess_corroboration
@@ -182,7 +184,7 @@ class TestReviewStore(unittest.TestCase):
             reason="NEW_DOCUMENT",new_material_refs=["new:doc-c"])
         self.assertEqual(newrev,2)
         self.assertEqual(self.store.active_attestations("C1","H1"),[])
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db:
             self.assertEqual(db.execute("SELECT count(*) FROM attestations").fetchone()[0],1)
 
     def test_reopen_requires_real_reason_and_material_reference(self):
@@ -250,14 +252,28 @@ class TestReviewStore(unittest.TestCase):
 
     def test_audit_event_mutation_detected(self):
         self.submit()
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db:
             db.execute("UPDATE review_events SET event_type='TAMPERED' WHERE event_type='HUMAN_REVIEW_ACCEPTED'")
+            db.commit()
         self.assertFalse(self.store.verify_local_audit_chain("C1","H1"))
 
     def test_sqlite_online_backup(self):
         self.submit()
         backup=Path(self.tmp.name)/"backup.sqlite3"
-        self.store.backup(backup)
+        # sqlite3.Connection used as a context manager does not close itself;
+        # backup() must close both source and destination handles explicitly.
+        real_connect=sqlite3.connect
+        created=[]
+        def tracking(path,*args,**kwargs):
+            conn=real_connect(path,*args,**kwargs)
+            created.append(conn)
+            return conn
+        with patch("ln_agent.review_store.sqlite3.connect",side_effect=tracking):
+            self.store.backup(backup)
+        self.assertEqual(len(created),2)
+        for conn in created:
+            with self.assertRaises(sqlite3.ProgrammingError):
+                conn.execute("select 1")
         restored=ReviewStore(backup,authorized_reviewers=frozenset({"human-A"}))
         self.assertEqual(len(restored.active_attestations("C1","H1")),1)
         self.assertTrue(restored.verify_local_audit_chain("C1","H1"))

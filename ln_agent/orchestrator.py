@@ -12,10 +12,12 @@ from .fact_verification import FactVerifier,ReviewAttestation
 class Orchestrator:
     def __init__(self, policy: Policy, tool: FixtureResearchTool,
                  *, verification_attestations: list[ReviewAttestation] | None = None,
-                 authorized_reviewers: frozenset[str] = frozenset()):
+                 authorized_reviewers: frozenset[str] = frozenset(),
+                 extra_tools: dict | None = None):
         self.policy = policy
         self.tool = tool
-        self.router = DecisionRouter(policy, InvestigationAgent(tool),
+        self.extra_tools = dict(extra_tools or {})
+        self.router = DecisionRouter(policy, InvestigationAgent(tool, extra_tools=self.extra_tools),
             FactVerifier(attestations=verification_attestations,
                          authorized_reviewers=authorized_reviewers))
 
@@ -52,6 +54,8 @@ class Orchestrator:
             "manual_investigation_queue_default": False,
             "results": [x.to_dict() for x in decisions],
             "stats": {"hits": len(decisions), "elapsed_ms": elapsed_ms, "fixture_source_reads": self.tool.read_count,
+                      "capture_tool_reads": {name: getattr(adapter, "read_count", 0)
+                                             for name, adapter in self.extra_tools.items()},
                       "report_drafts": sum(1 for d in decisions if d.disposition.get("report_recommended")),
                       "manual_queue_tasks": sum(1 for d in decisions if d.disposition.get("manual_queue_required"))},
         }

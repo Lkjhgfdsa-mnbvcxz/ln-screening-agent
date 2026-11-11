@@ -20,17 +20,33 @@ class FixtureResearchTool:
             return list(self.cache[key])
 
 class InvestigationAgent:
-    """Bounded sub-agent. Tools allowlist + explicit questions, no arbitrary actions."""
-    def __init__(self, tool: FixtureResearchTool):
+    """Bounded sub-agent. Tools allowlist + explicit questions, no arbitrary actions.
+
+    `extra_tools` maps a REGISTERED tool name to its local adapter. The Router
+    resolves the name from the source key and has already asked PolicyGuard to
+    authorize it. Missing adapters fail closed (TOOL_FAILURE_REVIEW), never by
+    silently falling back to a different data source.
+    """
+    def __init__(self, tool: FixtureResearchTool, *, extra_tools: dict | None = None):
         self.tool = tool
+        self.extra_tools = dict(extra_tools or {})
+
+    def _adapter(self, tool_name: str | None):
+        if tool_name in (None, "fixture_research", "document_intelligence"):
+            return self.tool
+        if tool_name not in self.extra_tools:
+            raise RuntimeError(f"no runtime adapter supplied for registered tool {tool_name}")
+        return self.extra_tools[tool_name]
 
     def investigate(self, key: str) -> list[Fact]:
         return self.investigate_with_evidence(key,[]).facts
 
-    def investigate_with_evidence(self,key:str,queries:list[str])->ResearchOutcome:
+    def investigate_with_evidence(self,key:str,queries:list[str],*,
+                                  tool_name:str|None=None)->ResearchOutcome:
         # The adapter is read-only. It can suggest unverified extracted fact candidates.
-        if hasattr(self.tool,"query_document"):
-            outcome=self.tool.query_document(key,queries)
+        adapter=self._adapter(tool_name)
+        if hasattr(adapter,"query_document"):
+            outcome=adapter.query_document(key,queries)
             return ResearchOutcome(facts=[f for f in outcome.facts if f.side=="hit"],
                                    document_packets=outcome.document_packets)
-        return ResearchOutcome(facts=[f for f in self.tool.query(key) if f.side=="hit"])
+        return ResearchOutcome(facts=[f for f in adapter.query(key) if f.side=="hit"])

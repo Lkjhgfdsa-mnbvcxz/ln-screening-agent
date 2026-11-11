@@ -34,3 +34,19 @@ No real merchant/customer data or credentials should be committed.
 - Optional LLM interface is `ln_agent/llm_adapter.py`, disabled by default and never invoked by offline runs; external data transfer requires explicit consent.
 - For new tools, emit `TOOL_STARTED`/`TOOL_FINISHED` with actual monotonic durations; keep `Tool` manifests and Skill contracts in sync.
 - Run web/SSE integration tests in `tests/test_workbench.py`; keep the GitHub README brief and illustration-based.
+
+## Authorized local WorkBuddy adapters (v0.9.3)
+
+- `workbuddy_browser_readonly` / `workbuddy_llm_capture` are `implemented_authorized_local` and **never** in the default `Policy.allowed_tool_names`; opt in with `authorized_policy()` only in an authorized local run.
+- Tool resolution is a prefix lookup in `ln_agent/tool_catalog.py`; do not reintroduce a hardcoded tool branch or a free-form model tool call in the Router.
+- `PolicyGuard.validate_facts()` enforces each tool manifest's `allowed_fact_origins` / `facts_must_be_unchecked`. Keep these fields in sync when adding a tool, and add a regression test that tries to smuggle `checked=true` model facts.
+- A capture bundle is scoped per hit (`boss:<case>:<hit>`); cross-hit evidence, masked identity values and `verification_id` must be rejected. Real bundles and full event logs stay in the authorized environment; only synthetic bundles belong in this repository.
+- See `docs/WORKBUDDY_INTEGRATION.md` for the exact call chain and the connected / not-connected list.
+
+## Public synthetic replay (v0.9.3)
+
+- `scripts/build_replay.py` is the **only** publisher of execution data. It reads just `examples/case_workbuddy_capture.json` and `examples/workbuddy_capture_bundle.json`, runs the real engine, and writes `examples/workbuddy_capture_replay.json`, `replay.html` and `index.html`.
+- Never point the generator, the workbench, or a test at an authorized local capture directory or any other real-data path. Real bundles, structured DOM captures and full JSONL logs stay outside the repository.
+- Keep `_assert_synthetic()` and `tests/test_public_replay.py` intact; they are the publication guard. Only aggregate, non-business counters may appear in public pages.
+- `replay.html` must stay a single self-contained file with no external resources, so it works both on GitHub Pages (site source `/`) and from a downloaded `file://` copy. Keep relative links root-based.
+- Changing the engine's emitted events requires regenerating the replay and updating the test count passed via `--tests`.

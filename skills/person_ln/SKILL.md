@@ -12,7 +12,7 @@ name, dob, document_number, gender, employer, role, acted_in_year, address, pep_
 
 ## 建议查询顺序
 
-ln → official → doc → web → qcc。真实外部接口未连接，当前使用模拟研究数据/本地文档。
+ln → official → doc → web → qcc → boss → model。真实外部接口未连接，当前使用模拟研究数据/本地文档；`boss:`（已登录浏览器只读采集）与 `model:`（会话内模型结构化抽取）仅在授权本地环境显式开启，详见 `skills/workbuddy_capture/`。
 
 ## 不得依据以下字段单独排除
 

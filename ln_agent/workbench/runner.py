@@ -25,6 +25,8 @@ EXAMPLES = {
     "false_positive": {"title":"人员排除候选 · 合成案例", "case":"examples/case_false_positive.json"},
     "company_risk": {"title":"重大名单风险 · 合成企业", "case":"examples/case_company_critical_suspected.json"},
     "person_risk": {"title":"核心身份信息一致 · 合成人员", "case":"examples/case_person_identity_suspected.json"},
+    "workbuddy_capture": {"title":"WorkBuddy 本地采集 · 合成回放", "case":"examples/case_workbuddy_capture.json",
+                          "capture":"examples/workbuddy_capture_bundle.json"},
 }
 
 @dataclass
@@ -94,10 +96,12 @@ class WorkbenchRunner:
     def capabilities(self) -> dict:
         from ..llm_adapter import LLMConfig
         llm=LLMConfig.from_env().status()
+        from ..workbuddy_adapters import BROWSER_TOOL, LLM_TOOL
         return {"mode":"synthetic_offline", "has_real_llm":llm["configured"],"llm":llm,"has_external_tools":False,
                 "skills":[{"slug":slug,"id":load_skill(slug)["id"]}
                           for slug in list(PRIMARY.values())+sorted(ADDITIONAL)],
                 "tools":tool_status(),"cases":{k:v["title"] for k,v in EXAMPLES.items()},
+                "workbuddy_local_adapters":[BROWSER_TOOL, LLM_TOOL],
                 "policy":"CANDIDATE / NOT APPROVED", "external_writeback":False}
 
     def start(self, key: str, workers: int = 4) -> RunRecord:
@@ -139,7 +143,18 @@ class WorkbenchRunner:
                                      "policy_effect":"none; display only"}})
             fixture = (json.loads((ROOT / cfg["research"]).read_text(encoding="utf-8"))
                        if "research" in cfg else {})
-            report = Orchestrator(Policy(),FixtureResearchTool(fixture)).run(
+            policy, extra_tools = Policy(), {}
+            if "capture" in cfg:
+                # Synthetic bundle only. Real authorized bundles are never in the repo.
+                from ..workbuddy_adapters import (CaptureBundle, authorized_policy,
+                                                  build_capture_tools)
+                bundle = CaptureBundle.from_json(ROOT / cfg["capture"])
+                extra_tools = build_capture_tools(bundle)
+                policy = authorized_policy(policy)
+                emit({"kind":"CAPTURE_ADAPTERS_ENABLED","stage":"policy","case_id":case.case_id,
+                      "hit_id":None,"status":"ok","details":{"tools":sorted(extra_tools),
+                                                             "bundle":"synthetic_local_only"}})
+            report = Orchestrator(policy,FixtureResearchTool(fixture),extra_tools=extra_tools).run(
                 case,max_workers=workers,on_event=emit)
             for decision in report["results"]:
                 prior = priors.get(decision["hit_id"])
