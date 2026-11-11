@@ -1,0 +1,14 @@
+{
+  "id": "llm_extraction",
+  "name": "LLM Fact Candidate Extraction",
+  "status": "optional_not_connected",
+  "read_only": true,
+  "writes_external": false,
+  "sends_document_text": true,
+  "allowed_prefixes": [
+    "llm"
+  ],
+  "implementation": "ln_agent.llm_adapter.LLMExtractionAdapter",
+  "authorization": "disabled until explicitly configured and explicitly allowed per call",
+  "notes": "Optional OpenAI-compatible endpoint. Output is always unchecked candidate facts; cannot submit LN outcomes."
+}

@@ -45,6 +45,8 @@ class Hit:
     research_keys: list[str] = field(default_factory=list)
     alert_id: str = ""
     notes: str = ""
+    risk_event: dict[str, Any] = field(default_factory=dict)  # source-attributed event, not assumed verified
+    screening_url: str = ""  # display-only; never fetched
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "Hit":
@@ -52,7 +54,8 @@ class Hit:
                    entity_type=raw.get("entity_type", "person"),
                    facts=[Fact.from_dict(x) for x in raw.get("facts", [])],
                    research_keys=list(raw.get("research_keys", [])),
-                   alert_id=raw.get("alert_id", ""), notes=raw.get("notes", ""))
+                   alert_id=raw.get("alert_id", ""), notes=raw.get("notes", ""),
+                   risk_event=dict(raw.get("risk_event") or {}), screening_url=raw.get("screening_url", ""))
 
 @dataclass
 class Subject:
@@ -71,6 +74,7 @@ class Case:
     case_id: str
     subjects: list[Subject]
     hits: list[Hit]
+    context: dict[str, Any] = field(default_factory=dict)
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "Case":
         subjects = [Subject.from_dict(x) for x in raw.get("subjects", [])]
@@ -86,7 +90,7 @@ class Case:
                 raise ValueError(f"hit {hit.hit_id}: entity type mismatch")
         if len({h.hit_id for h in hits}) != len(hits):
             raise ValueError("duplicate hit_id")
-        return cls(case_id=raw["case_id"], subjects=subjects, hits=hits)
+        return cls(case_id=raw["case_id"], subjects=subjects, hits=hits, context=dict(raw.get("context") or {}))
 
 @dataclass
 class EvidenceResult:
@@ -106,7 +110,7 @@ class Decision:
     reasons: list[str]
     actions: list[str]
     history: list[dict[str, Any]]
-    review_required: bool = True
+    review_required: bool = True   # legacy formal disposition authorization; not a manual research queue
     policy_version: str = ""
     disposition_flags: list[str] = field(default_factory=list)
     exclusion_evidence_detected: bool = False
@@ -126,6 +130,7 @@ class Decision:
     explanation: dict[str, Any] = field(default_factory=dict)
     execution_path: list[dict[str, Any]] = field(default_factory=list)
     stop_reason: str = ""
+    disposition: dict[str, Any] = field(default_factory=dict)
     version_snapshot: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:

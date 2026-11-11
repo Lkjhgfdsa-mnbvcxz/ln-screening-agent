@@ -1,0 +1,13 @@
+{
+  "id": "qcc",
+  "title": "企查查企业查询",
+  "status": "not_connected",
+  "runtime_entrypoint": null,
+  "allowed_prefixes": [
+    "qcc"
+  ],
+  "network": true,
+  "writes_external": false,
+  "purpose": "待授权额度和合规审批的查询适配器",
+  "read_only": true
+}

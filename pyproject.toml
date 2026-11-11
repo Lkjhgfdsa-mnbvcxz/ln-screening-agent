@@ -1,9 +1,17 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "ln-screening-agent-integrated"
-version = "0.6.0"
-description = "Synthetic-data-only, read-only LN screening decision harness prototype"
+name = "ln-intelligent-screening-agent"
+version = "0.9.1"
+description = "Evidence-driven, policy-constrained LN screening agent with local SSE workbench (synthetic data only)"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
+
+[project.optional-dependencies]
+documents = ["pypdf>=4,<7", "openpyxl>=3.1,<4"]
 
 [tool.setuptools.packages.find]
 where = ["."]

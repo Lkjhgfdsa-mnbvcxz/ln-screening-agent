@@ -1,0 +1,21 @@
+{
+  "id": "SKILL_DOCUMENT_INTELLIGENCE_V1",
+  "version": "1.0",
+  "scope": "document_research",
+  "trigger_prefixes": [
+    "doc:"
+  ],
+  "allowed_tool_names": [
+    "document_intelligence"
+  ],
+  "output": [
+    "evidence_packet",
+    "unverified_fact_candidates"
+  ],
+  "prohibited_shortcuts": [
+    "同名不同人段落合并",
+    "把发布日期当作任职年份",
+    "没有原文位置就直接判断"
+  ],
+  "read_only": true
+}

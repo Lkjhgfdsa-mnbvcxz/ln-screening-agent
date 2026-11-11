@@ -33,7 +33,7 @@ SPECS = (
     RuleSpec("P10_PHOTO_EVENT", ("photo_comparison", "acted_in_year"), "photo or event lead", "proven individual correspondence", "SOFT_ONLY", "appearance never hard exclusion", "human source review"),
 )
 RULE_MAP = {
-    "P01_NAME": ((), (), ("name_exact",)),
+    "P01_NAME": ((), (), ("name_exact", "name_legal_suffix_equivalent")),
     "P02_COMPLETE_DOB": (("DOB_EXACT_CONFLICT",), ("DOB_EXACT_MATCH",), ("dob_exact",)),
     "P03_FULL_ID": ((), ("DOCUMENT_EXACT_MATCH",), ("document_difference_verify_history",)),
     "P04_TEMPORAL_IMPOSSIBILITY": (("PRE_BIRTH_ACTION_IMPOSSIBLE",), (), ()),

@@ -1,0 +1,13 @@
+{
+  "id": "ln_readonly",
+  "title": "LN 授权只读数据",
+  "status": "not_connected",
+  "runtime_entrypoint": null,
+  "allowed_prefixes": [
+    "ln"
+  ],
+  "network": true,
+  "writes_external": false,
+  "purpose": "待批准的 LN 只读 API/结构化导出适配器",
+  "read_only": true
+}

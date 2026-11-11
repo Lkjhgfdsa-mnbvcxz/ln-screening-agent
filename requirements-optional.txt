@@ -1,3 +1,0 @@
-# Optional local parsing dependencies. Core routing/demo/tests require only stdlib.
-pypdf>=4,<7
-openpyxl>=3.1,<4

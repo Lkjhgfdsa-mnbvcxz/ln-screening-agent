@@ -1,0 +1,17 @@
+{
+  "id": "SKILL_RESIDUAL_SUSPICION_V1",
+  "version": "1.0",
+  "scope": "residual_suspicion",
+  "trigger_prefixes": [],
+  "allowed_tool_names": [],
+  "output": [
+    "sufficiency",
+    "advisory_recommendation"
+  ],
+  "prohibited_shortcuts": [
+    "评分覆盖硬证据",
+    "将未核实当作不存在",
+    "低分自动放行"
+  ],
+  "read_only": true
+}

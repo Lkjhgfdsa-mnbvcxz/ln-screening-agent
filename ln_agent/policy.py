@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class Policy:
-    version: str = "CANDIDATE-0.2"
+    version: str = "CANDIDATE-0.8.1"
     max_research_actions_per_hit: int = 3
     # Proposed rule candidates can be disabled individually without patching Python logic.
     disabled_rules: frozenset[str] = field(default_factory=frozenset)
@@ -27,5 +27,12 @@ class Policy:
         ("name_exact", 1), ("region_overlap", 2), ("address_overlap", 3), ("company_link", 3),
         ("dob_exact", 3), ("ongoing_pep", 2), ("former_pep", -1),
         ("recent_adverse_event", 2), ("sanctions_category", 4))
+    # These controls produce report DRAFTS ONLY, never automatic external action.
+    # Their business approval and calibration are pending.
+    reportable_risk_categories: frozenset[str] = field(default_factory=lambda: frozenset({"enforcement", "sanctions"}))
+    reportable_impact_levels: frozenset[str] = field(default_factory=lambda: frozenset({"high", "critical"}))
+    report_critical_name_matches: bool = True
+    # True human investigation queue is exceptional and must be policy-configured.
+    mandatory_human_queue_categories: frozenset[str] = field(default_factory=frozenset)
     suspicion_report_threshold: int = 7
     suspicion_review_threshold: int = 3

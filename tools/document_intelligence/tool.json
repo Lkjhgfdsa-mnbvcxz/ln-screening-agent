@@ -1,0 +1,13 @@
+{
+  "id": "document_intelligence",
+  "title": "本地文档定位与证据包",
+  "status": "implemented_offline",
+  "runtime_entrypoint": "ln_agent.document_tools.DocumentFixtureResearchTool.query_document",
+  "allowed_prefixes": [
+    "doc"
+  ],
+  "network": false,
+  "writes_external": false,
+  "purpose": "解析允许的本地资料、定位上下文、扩展重要证据，返回未经核实事实",
+  "read_only": true
+}

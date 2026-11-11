@@ -6,13 +6,14 @@ shown separately and cannot magically cancel a confirmed sanctions restriction.
 from __future__ import annotations
 from .models import EvidenceResult, Hit
 from .policy import Policy
+from .risk_categories import any_category
 
 class SuspicionAgent:
     def __init__(self,policy:Policy):self.policy=policy
 
     def assess(self,hit:Hit,evidence:EvidenceResult)->dict:
         signals=set(evidence.soft_signals)
-        if hit.category=="sanctions":signals.add("sanctions_category")
+        if any_category(hit.category, frozenset({"sanctions"})):signals.add("sanctions_category")
         weights=dict(self.policy.suspicion_weights)
         contributions={s:weights[s] for s in sorted(signals) if s in weights}
         # Sufficient identity info is a prerequisite; category and a generic
@@ -23,16 +24,16 @@ class SuspicionAgent:
         insuff_reason=None if sufficient else "缺少足以区分同名身份的独立字段；不输出精确分数"
         score=sum(contributions.values()) if sufficient else None
         negative={k:v for k,v in contributions.items() if v<0}
-        if hit.category in self.policy.unresolved_mandatory_review:
+        if any_category(hit.category, self.policy.unresolved_mandatory_review):
             recommendation="MANDATORY_REVIEW"
         elif not sufficient:
-            recommendation="INSUFFICIENT_EVIDENCE_MANUAL_ASSESSMENT"
+            recommendation="INSUFFICIENT_EVIDENCE_RECORDED"
         elif score>=self.policy.suspicion_report_threshold:
-            recommendation="RECOMMEND_REPORT_FOR_REVIEW"
+            recommendation="SUSPECTED_HIT_REPORT_DRAFT"
         elif score>=self.policy.suspicion_review_threshold:
-            recommendation="MANUAL_ASSESSMENT"
+            recommendation="FURTHER_IDENTITY_EVIDENCE_OPTIONAL"
         else:
-            recommendation="LOWER_PRIORITY_MANUAL_ASSESSMENT"
+            recommendation="LOWER_RISK_NO_REPORT_ADVISORY"
         return {
           "score":score,"factors":contributions,"negative_factors":negative,
           "evidence_sufficiency":{"sufficient_for_numeric_score":sufficient,"reason":insuff_reason},

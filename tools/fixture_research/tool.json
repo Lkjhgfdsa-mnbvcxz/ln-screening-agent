@@ -1,0 +1,18 @@
+{
+  "id": "fixture_research",
+  "title": "本地研究记录查询",
+  "status": "implemented_offline",
+  "runtime_entrypoint": "ln_agent.tools.FixtureResearchTool.query",
+  "allowed_prefixes": [
+    "ln",
+    "official",
+    "doc",
+    "web",
+    "qcc",
+    "registry"
+  ],
+  "network": false,
+  "writes_external": false,
+  "purpose": "按来源 key 查询合成 Fact，含读缓存",
+  "read_only": true
+}

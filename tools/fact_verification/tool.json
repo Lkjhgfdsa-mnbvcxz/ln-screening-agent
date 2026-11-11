@@ -1,0 +1,11 @@
+{
+  "id": "fact_verification",
+  "title": "事实核实闸门",
+  "status": "implemented_internal",
+  "runtime_entrypoint": "ln_agent.fact_verification.FactVerifier.verify_packet",
+  "allowed_prefixes": [],
+  "network": false,
+  "writes_external": false,
+  "purpose": "验证授权审阅记录与文档指纹/位置/命中归属；不可模型自签",
+  "read_only": true
+}

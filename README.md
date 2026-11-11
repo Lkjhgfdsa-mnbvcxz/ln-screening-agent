@@ -1,99 +1,44 @@
-# LN Intelligent Screening Agent — Integrated MVP (offline)
+# LN Intelligent Screening Agent
 
-**Version:** `integration-2026-11-11` · Python 3.10+ · **synthetic-data / read-only / human-review-only**
+**本地可运行 · 动态核验 · 多 Skill / Tool · 实时工作台**
 
-This runnable project merges the **complete V0.5 implementation** (dynamic routing, document parsing, contextual evidence extraction, fact verification, independent-source corroboration, SQLite review history and REOPEN) with the **implementable portions of WorkBuddy Round 2** (runtime P01–P10 rule registry, independent risk gate, explicit guard checkpoints, five-WHY explanation and cross-condition tests).
+以证据为依据的 LN 名单核验 **开发原型**：多条命中并行判断、按需调查、生成简洁的内部说明及疑似命中草稿。无 API Key 也可运行合成案例。
 
-> **This is a prototype of an Agent system / harness, not a production compliance tool or an autonomous LN decision-maker.** The offline `InvestigationAgent` uses local synthetic fixtures, not an LLM, sanctioned lists, public search, authentic LN/BOSS systems or QCC APIs. A rule candidate is **not a company-approved screening rule**. No automatic whitelist, LN disposition or compliance report is implemented. Never use generated decisions to accept real merchants.
+![Architecture](assets/architecture.svg)
 
-## 1. Quickest reproducible demonstration (one linked and one false-positive candidate)
-
-```bash
-# unzip this folder, open terminal, cd to the folder containing this README
-python3 run_two_cases.py
-```
-
-Expected console summary:
-
-```text
-strong_link: LINKED_RISK_REVIEW | identity=strong_link | manual_review=True | authorized_exclusion=False
-false_positive: EXCLUSION_CANDIDATE | identity=excluded_candidate | manual_review=True | authorized_exclusion=False
-PASS: both independent synthetic cases
-```
-
-Output `examples/two_case_demo_report.json` shows each input, route, facts, P01–P10 findings, Risk Gate conditions, five reasons, execution path and disposition safeguards.
-
-**Interpretation:** “linked” is a reliable *candidate identity association* requiring risk review, **not** approval of the merchant or verified guilt. “false positive” is an evidence-backed *exclusion candidate* requiring manual confirmation, **not** an automatically authorized clearance.
-
-## 2. Automated tests
+## 启动
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 run.py web
+# 打开 http://127.0.0.1:8765
 ```
 
-**120 tests passed** in the integration environment: 108 pre-existing V0.5 cases and 12 integration tests. These are offline *functional tests*, not measured regulatory accuracy or precision/recall against labeled LN cases. GitHub Actions also runs them on push/PR.
+![Local workbench (synthetic preview)](assets/workbench-preview.webp)
 
-## 3. Other runnable scenarios
+*图为合成数据页面预览；实际耗时与状态由本地运行产生。*
 
 ```bash
-python3 run.py examples/demo_case.json --research examples/research_fixtures.json --out examples/legacy_demo_report.json
-python3 run_documents.py examples/document_case.json examples/document_manifest.json --out examples/document_demo_report.json
-python3 run_verification_demo.py
-python3 run_v05_demo.py
+python3 run.py demo                          # 强关联 + 误报候选
+python3 run.py inspect                       # 查看 Skill / Tool 状态
+python3 run.py llm-status                    # 模型接口配置（不会请求外网）
+python3 -m unittest discover -s tests -q     # 完整回归
 ```
 
-For PDF/XLSX parsing, optional third-party packages can be installed using `python3 -m pip install -r requirements-optional.txt`. TXT/HTML routes and all 120 tests run with the standard library; document fixtures do not imply authenticated external retrieval.
+## 代码导航
 
-## 4. Actual code path
+| 位置 | 内容 |
+|---|---|
+| [`ln_agent/`](ln_agent/) | Router、Rule Engine、PolicyGuard、Risk Gate、证据与处置生成 |
+| [`skills/`](skills/) | 7 个 Skill；每个都有 README、SKILL.md 和执行契约 |
+| [`tools/`](tools/) | 10 个 Tool 定义；当前本地工具可用，真实外部连接器待授权接入 |
+| [`ln_agent/workbench/`](ln_agent/workbench/) | 本地 HTML + SSE 实时进度、并行运行、计时和历史结论对照 |
+| [`examples/`](examples/) / [`tests/`](tests/) | 合成案例、回归测试 |
+| [`scripts/`](scripts/) | 保留必要的文档 / 处置演示入口 |
 
-```text
-Case (synthetic JSON)
-  -> Orchestrator (per-hit isolation and concurrent execution)
-    -> PolicyGuard ingestion check (case + hit + allowed facts)
-    -> DecisionRouter
-        -> RiskGate Q0 (screening review vs separately configured compliance escalation)
-        -> evidence.evaluate (existing deterministic comparisons)
-        -> rules.RuleRegistry (P01–P10 findings + runtime disable switch)
-        -> PolicyGuard hard-rule check
-        -> either:
-           - exclusion candidate (never auto-clear),
-           - strong linked identity for risk review,
-           - InvestigationAgent (bounded read-only fixture / Document Intelligence),
-           - FactVerifier (human attestation fixture; cannot self-certify),
-           - corroboration (distinct confirmed source lineages),
-           - SuspicionAgent (only unresolved and no further action)
-        -> RiskGate FINAL check + five-WHY explanation
-  -> optional ReviewStore SQLite audit + REOPEN
-  -> JSON report for a HUMAN reviewer
-```
+详见 [工作台](docs/WORKBENCH.md)、[处置文案](docs/DISPOSITION_OUTPUTS.md)、[WorkBuddy 交接](docs/WORKBUDDY_HANDOFF.md) 和 [Agent 开发约束](AGENTS.md)。
 
-### Source code map
+## 模型接口与部署边界
 
-| Folder/file | Responsibility |
-| --- | --- |
-| `ln_agent/models.py` | `Case`, `Subject`, `Hit`, `Fact` and `Decision`; provenance metadata |
-| `ln_agent/evidence.py` | Deterministic comparisons, validity/compatibility, temporal impossibility |
-| `ln_agent/rules/registry.py` | WorkBuddy-inspired P01–P10 specifications, current findings, runtime rule enable/disable |
-| `ln_agent/policy_guard.py` | Ingestion, source/skill tool allowlist, candidate fact validation, hard-rule restriction, unsupported disposition blocking |
-| `ln_agent/risk_gate.py` | Independent Q0/final gate; history retention; screening alert vs compliance escalation |
-| `ln_agent/router.py` | Per-hit dynamic decision loop; evidence re-evaluation; early stop; skip and tool failure |
-| `ln_agent/explain.py` | Five reasons tied to actual runtime state, not generated prose |
-| `ln_agent/tools.py`, `ln_agent/document_tools.py` | Fixture research and document adapters; no external requests |
-| `ln_agent/document_intelligence/` | Local parsing, text targeting, contexts, material sweep, provenance |
-| `ln_agent/fact_verification.py` | Check exact original location and simulated human attestation before using extracted facts |
-| `ln_agent/corroboration.py` | Source lineage independence and contradiction handling |
-| `ln_agent/review_store.py`, `ln_agent/review_service.py` | SQLite review persistence, revisions, REOPEN and local audit history |
-| `tests/` | Regression and cross-condition safety tests |
-| `examples/` | **Synthetic** cases and fixture documents |
+`.env.example` 中预留 OpenAI-compatible API；**留空可运行**，默认不会把商户数据发往模型。实际调查模型还未接入动态执行路径，LN / BOSS / 企查查 / 公开网页的真实只读接口也尚未接通。所有处置仅为草稿，**不会发送消息、自动放行或写回 LN**。
 
-## 5. Integration boundaries and differences
-
-The WorkBuddy upload **did not contain its complete `ln_agent/` runtime package**. It contained only a newer `router.py`, `run.py`, two test modules, a fixture, a pre-generated report and design documents. That `router.py` imports unavailable `ln_agent.rules.ebe`, `ln_agent.explain`, `ln_agent.risk_gate`, and other interfaces whose exact implementation was not supplied. Replacing V0.5's router with it would break the runnable code.
-
-This integrated runtime instead **ports the principles into V0.5's actual interfaces**, with tests proving rule disable, gate persistence, evidence provenance and five explanations. The WorkBuddy `111 tests` claim was **not independently reproduced** from the incomplete upload. See `docs/WORKBUDDY_HANDOFF.md` and `docs/INTEGRATION_ASSESSMENT.md` for remaining differences.
-
-## 6. Security + Git
-
-See `docs/GIT_HANDOFF.md` before pushing. Public repos should use **synthetic data only**, as here. Do **not** add internal SOP screenshots, real merchant details, sanctions results, identity photos, cookies, auth tokens, system URLs, or employee private records. Use a private company-approved repository if the project itself or its business logic is proprietary.
-
-This project has no deployment/API credentials and no production web interface. `requirements-optional.txt` is only for local document parsing. No automatic writes to LN or whitelist operations are implemented.
+> **Git 安全提醒**：仅在获授权范围内共享源码；仓库只使用合成数据。不要提交真实商户数据、内部 BOSS 链接、SOP、API Key、Cookie、运行数据库或本地报告。建议先用 Private 仓库。

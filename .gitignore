@@ -26,4 +26,6 @@ __MACOSX/
 *_report.json
 report.json
 *.tmp
+# Local workbench event history, contains trace records; never push
+.local/
 .github/

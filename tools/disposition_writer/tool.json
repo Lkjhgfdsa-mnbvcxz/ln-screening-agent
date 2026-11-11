@@ -1,0 +1,11 @@
+{
+  "id": "disposition_writer",
+  "title": "简洁内部说明与疑似命中报告草稿",
+  "status": "implemented_internal",
+  "runtime_entrypoint": "ln_agent.disposition.build_disposition",
+  "allowed_prefixes": [],
+  "network": false,
+  "writes_external": false,
+  "purpose": "根据证据与风险处置结果生成简洁说明、引用来源以及可选的合规上报草稿；不发送消息",
+  "read_only": true
+}

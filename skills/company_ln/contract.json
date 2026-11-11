@@ -1,0 +1,44 @@
+{
+  "id": "SKILL_COMPANY_LN_V1",
+  "fields": [
+    "company_name",
+    "registration_number",
+    "jurisdiction",
+    "address",
+    "director",
+    "owner"
+  ],
+  "preferred_sources": [
+    "ln",
+    "registry",
+    "official",
+    "doc",
+    "qcc",
+    "web"
+  ],
+  "allowed_research_sources": [
+    "ln",
+    "registry",
+    "official",
+    "doc",
+    "qcc",
+    "web"
+  ],
+  "blocked_exclusion_fields": [
+    "address",
+    "company_name",
+    "business_address"
+  ],
+  "prohibited_shortcuts": [
+    "地址相同即认定同一企业",
+    "营业地址不同即自动排除"
+  ],
+  "version": "1.0",
+  "entity_type": "company",
+  "allowed_tool_names": [
+    "fixture_research",
+    "document_intelligence"
+  ],
+  "read_only": true,
+  "runtime_role": "primary_identity_investigation"
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LN Screening — Local Workbench</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">L</div><div><strong>LN Screening</strong><span>Agent Workbench · v0.9</span></div></div>
+    <div class="side-label">工作区</div>
+    <a class="nav selected" href="#overview">▦ <span>实时审核</span></a>
+    <a class="nav" href="#capabilities">◇ <span>Skills & Tools</span></a>
+    <div class="side-spacer"></div>
+    <div class="mode">● SYNTHETIC / OFFLINE</div>
+    <p class="side-foot">仅运行仓库内虚构样例。无真实 LN/BOSS 接口、外部搜索或 LLM；不发送、不写回。</p>
+  </aside>
+  <main class="main" id="overview">
+    <header class="topbar"><div><div class="eyebrow">SCREENING OPERATIONS</div><h1>实时核验工作台</h1><p class="subtitle">每条命中独立运行 · 事件有据可查 · 耗时来自实际执行</p></div><div class="status-pill" id="service">● 本地模式</div></header>
+    <section class="toolbar panel"><div class="control"><label for="case">演示工单</label><select id="case"></select></div><div class="control narrow"><label for="workers">并发命中数</label><select id="workers"><option>1</option><option>2</option><option selected>4</option><option>8</option></select></div><button id="run" class="primary">▶ 开始运行</button><span id="runinfo" class="hint">选择合成样例即可演示</span></section>
+    <section class="metrics"><div class="metric"><label>总命中</label><strong id="total">—</strong><small>本次工单</small></div><div class="metric"><label>已完成</label><strong id="complete">—</strong><small>逐条实时更新</small></div><div class="metric"><label>累计事件</label><strong id="events-count">—</strong><small>Skill / Policy / Rule / Tool</small></div><div class="metric"><label>实际墙钟耗时</label><strong id="elapsed">—</strong><small>不是模拟进度百分比</small></div></section>
+    <section class="two-col"><div class="panel"><div class="heading"><div><h2>命中列表</h2><p>点击查看单条结果与证据链</p></div><span id="case-status" class="tag">尚未运行</span></div><div id="hits" class="hit-list empty">启动演示后显示命中记录。</div></div>
+    <div class="panel"><div class="heading"><div><h2>当前命中</h2><p>判断结果 · 事由 · 历史审核对比</p></div><div class="heading-actions"><button id="download" class="light" disabled>导出 JSON</button><button id="copy" class="light" disabled>复制内部说明</button></div></div><div id="detail" class="empty detail">点击左侧命中查看详情。</div></div></section>
+    <section class="two-col bottom"><div class="panel"><div class="heading"><div><h2>实时执行事件</h2><p>来自真实代码调用点，并非 AI 复述</p></div><span id="live-label" class="tag">未连接</span></div><div class="filters"><button data-filter="all" class="filter on">全部</button><button data-filter="skill" class="filter">Skill</button><button data-filter="policy" class="filter">Policy</button><button data-filter="rule_engine" class="filter">Rule</button><button data-filter="investigation" class="filter">Tools</button></div><div id="timeline" class="timeline empty">暂无事件</div></div>
+    <div class="panel"><div class="heading"><div><h2>性能监控</h2><p>事件级真实耗时 · 并行阶段耗时可重叠</p></div></div><div id="perf" class="perf empty">运行后显示实际计时结果。</div><div class="note">只统计已埋点的代码段；不含真实网络/LLM 延迟。本地 SQLite、人审与审批系统尚未接到工作台。</div></div></section>
+    <section id="capabilities" class="panel cap"><div class="heading"><div><h2>能力清单与执行真实性</h2><p>区分「已实现的确定性内核」与「尚未接通的外部工具」</p></div></div><div id="cap-list" class="cap-grid"></div></section>
+    <footer>本地合成数据演示 · Policy 候选规则未经公司批准 · 不可用于真实商户准入处置</footer>
+  </main>
+</div><script src="/app.js" defer></script>
+</body></html>

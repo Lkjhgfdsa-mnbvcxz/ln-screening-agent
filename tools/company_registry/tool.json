@@ -1,0 +1,13 @@
+{
+  "id": "company_registry",
+  "title": "官方企业登记处资料",
+  "status": "not_connected",
+  "runtime_entrypoint": null,
+  "allowed_prefixes": [
+    "registry"
+  ],
+  "network": true,
+  "writes_external": false,
+  "purpose": "待各司法辖区来源和权限确认的登记查询",
+  "read_only": true
+}

@@ -1,0 +1,17 @@
+{
+  "case_id": "SYN-CASE-PERSON-002",
+  "context": {"application_ref": "SYNTHETIC-GPT-002"},
+  "subjects": [{"subject_id": "person_002", "entity_type": "person", "role": "director", "facts": [
+    {"side": "applicant", "field": "name", "value": "李某", "evidence_id": "SYN:KYB:PERSON-NAME", "origin": "kyb_verified", "checked": true},
+    {"side": "applicant", "field": "dob", "value": "1982-04-19", "evidence_id": "SYN:KYB:PERSON-DOB", "origin": "kyb_verified", "checked": true},
+    {"side": "applicant", "field": "document_number", "value": "SYNTHETIC-PASSPORT-0001", "evidence_id": "SYN:KYB:PERSON-ID", "origin": "kyb_verified", "checked": true, "context": "PASSPORT"},
+    {"side": "applicant", "field": "address", "value": "Example District A", "evidence_id": "SYN:KYB:RES-ADDR", "origin": "kyb_verified", "checked": true, "context": "RESIDENTIAL_ADDRESS"}
+  ]}],
+  "hits": [{"hit_id": "LN-SYN-PERSON-002", "subject_id": "person_002", "category": "enforcement", "entity_type": "person", "facts": [
+    {"side": "hit", "field": "name", "value": "李某", "evidence_id": "SYN:LN:PERSON-NAME", "origin": "ln_structured", "checked": true},
+    {"side": "hit", "field": "dob", "value": "1982-04-19", "evidence_id": "SYN:LN:PERSON-DOB", "origin": "ln_structured", "checked": true},
+    {"side": "hit", "field": "document_number", "value": "SYNTHETIC-PASSPORT-0001", "evidence_id": "SYN:LN:PERSON-ID", "origin": "ln_structured", "checked": true, "context": "PASSPORT"},
+    {"side": "hit", "field": "address", "value": "Example District B", "evidence_id": "SYN:LN:RES-ADDR", "origin": "ln_structured", "checked": true, "context": "RESIDENTIAL_ADDRESS"}
+  ], "risk_event": {"summary": "合成执法记录涉及涉恐资金调查及财产扣押事项", "severity": "critical", "source_ref": "SYN:LN:RISK-EVENT-002"},
+  "screening_url": "https://example.invalid/synthetic/checklist/002", "research_keys": []}]
+}

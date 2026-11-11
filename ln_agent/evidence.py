@@ -5,26 +5,11 @@ import unicodedata
 from datetime import date
 from collections import defaultdict
 from .models import Fact, EvidenceResult
-
-# Legal entity suffix equivalences (compared after separators are stripped).
-# "LTD"/"LIMITED", "INC"/"INCORPORATED", "CORP"/"CORPORATION", "CO"/"COMPANY" are
-# the same legal suffix and must not block a name-exact match.
-_SUFFIX_EQUIV = {
-    "ltd": "limited",
-    "inc": "incorporated",
-    "corp": "corporation",
-    "co": "company",
-}
+from .name_matching import company_name_match_kind
 
 def norm(s: str) -> str:
     s = unicodedata.normalize("NFKC", str(s)).casefold()
-    s = re.sub(r"[\s.,，。\-_/（）()]+", "", s)
-    # canonicalize legal suffixes; suffixes only appear at the end of entity names
-    for abbrev, full in _SUFFIX_EQUIV.items():
-        if s.endswith(abbrev) and len(s) > len(abbrev):
-            s = s[: -len(abbrev)] + full
-            break
-    return s
+    return re.sub(r"[\s.,，。\-_/（）()]+", "", s)
 
 def iso_dob(raw: str) -> date | None:
     try:
@@ -67,8 +52,14 @@ def evaluate(applicant: list[Fact], hits: list[Fact], entity_type: str,
 
     for x in a.get("name", []) + a.get("company_name", []):
         for y in h.get(x.field, []):
-            if norm(x.value) == norm(y.value):
-                r.soft_signals.append("name_exact")
+            kind = (company_name_match_kind(x.value, y.value) if x.field == "company_name"
+                    else "normalized_exact" if norm(x.value) and norm(x.value) == norm(y.value)
+                    else None)
+            if kind:
+                r.soft_signals.append("name_exact")  # historical downstream signal name
+                if kind == "legal_suffix_equivalent":
+                    r.soft_signals.append("name_legal_suffix_equivalent")
+                r.anchors.extend([x.evidence_id, y.evidence_id])
                 break
     for field in ("region", "business_region"):
         for x in a.get(field, []):

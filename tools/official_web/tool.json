@@ -1,0 +1,14 @@
+{
+  "id": "official_web",
+  "title": "官方公告与网页检索",
+  "status": "not_connected",
+  "runtime_entrypoint": null,
+  "allowed_prefixes": [
+    "official",
+    "web"
+  ],
+  "network": true,
+  "writes_external": false,
+  "purpose": "待批准的域名/IP 限制安全网页抓取",
+  "read_only": true
+}

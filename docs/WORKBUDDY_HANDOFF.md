@@ -1,25 +1,39 @@
-# WorkBuddy 接续开发指令（可直接粘贴给 WorkBuddy）
+# WorkBuddy 接续开发 · v0.9
 
-请以此仓库作为**唯一可运行代码基线**，先执行：
+## 先运行（不需要模型 Key）
 
 ```bash
-python3 run_two_cases.py
-python3 -m unittest discover -s tests -v
+python3 run.py web
+# http://127.0.0.1:8765
+python3 run.py demo
+python3 run.py llm-status
+python3 -m unittest discover -s tests -q
 ```
 
-**已实跑基线**：120 项测试通过；两个合成工单分别输出 `LINKED_RISK_REVIEW`（强关联，待复核）与 `EXCLUSION_CANDIDATE`（有排除反证，待人工确认）。项目默认只读、模拟数据、无 LN 写回权限。
+本地可运行基线包含：规则与风险闸门、动态路由、并行命中、结构化证据、文档智能、来源核实、来源佐证、REOPEN、简洁处置草稿，以及 **真实代码事件驱动**的 HTML/SSE 工作台。前端页面只展示实际 `on_event` 埋点和后端结构化结果，不需要让 AI 逐条“汇报进度”。
 
-你之前传给 ChatGPT 的 `workbuddy目前成果.zip` **缺少**你文档描述的完整 `ln_agent/` 源代码，只有 router.py、run.py、两组单测及部分数据和文档。因此最新 router.py 未直接替换此仓库的 router；需要先补齐你的 `ln_agent/rules/ebe.py` 等依赖，逐模块整合并回归测试。不要把完整缺失代码当作“已经在本项目里”。
+## 先从这三个入口接续
 
-接下来建议按严格优先级实施（不要重新设计已稳定的 A/B/C 动态路由）：
+| 入口 | 作用 |
+|---|---|
+| `ln_agent/workbench/server.py` | 本地 HTTP + SSE 服务，保留只读 localhost 安全边界 |
+| `ln_agent/workbench/runner.py` | 多命中任务、事件历史、耗时快照、既有审核记录导入与对照 |
+| `ln_agent/llm_adapter.py` | 可配置 OpenAI-compatible 模型事实抽取接口，**默认未启用** |
 
-1. **P0 判断一致性**：将你的 RuleEngine/FieldReliabilityGate 全量实现逐条合并到 `ln_agent/evidence.py` + `ln_agent/rules/registry.py`，保持 `exclusion_evidence_detected` 与 `exclusion_authorized` 分离，完善 case/hit 与证据适用性校验，补优先级交叉、三态权限批准、来源冲突回归。
-2. **P0 五检查点正式化**：补全 PolicyGuard 真实可运行的动作白名单、Schema、来源范围、敏感数据控制。对所有会影响判断/行动的 Policy 字段逐一写策略变更测试；元数据字段不必改变业务结论。
-3. **P0 崩溃恢复**：目前 `review_store.py` 持久化的是人工核实/结论/REOPEN，**不是**每项外部调查动作的 exactly-once 检查点。新增 `TaskEvent`, `HitState`, 重启幂等续跑、来源级限流、检查点恢复测试。
-4. **P1 工单级调度**：多工单隔离、并发预算、原始 LN 命中数完整性、簇类型 SAME_ENTITY/SAME_EVENT/SHARED_SOURCE（仅共享来源资源，不共享结论）。
-5. **P1 真实调查适配器**：先获准只读 LN 导出/API；再在明确权限范围内接官方网页、文件采集、企查查；上线前实现 URL SSRF 防护、域名白名单、DNS/redirect 校验、超时/体积限制、文档恶意内容隔离、凭证保护、数据驻留审批。
-6. **P1 本地演示**：继续使用 `run_two_cases.py` 两套合成场景，新增对照运行记录、按 Rule ID/Fact/Evidence/HitEvidenceLink 查明每个判断；再构建只读工作台/API（FastAPI 和前端建议单独做）。
+更多具体接口：[`WORKBENCH.md`](WORKBENCH.md) 与根目录 [`AGENTS.md`](../AGENTS.md)。
 
-**交付标准**：每次迭代必须同时提交代码、测试、`README` 启动方式、通过/失败记录、差异说明；不要让文档宣称的功能超过实际可调用代码。任何真实 LN/商户敏感材料不得进入公开仓库。
+## 必须保持的业务边界
 
-> 主体分类：LN Intelligent Screening Agent System（包含 deterministic harness、bounded investigation agent、skills、evidence/rule/policy engines），不是一个单独的 Skill。当前是离线原型，而非自主联网生产 Agent。
+1. 原有审核结论是**已有工作流记录**，不是 Agent 自动认定的身份事实。展示并对照，不静默覆盖；真实来源需获授权只读 BOSS 适配器。
+2. 正式筛查风险处置由政策控制。`unresolved` 可以同时生成疑似命中建议；**信息不足不自动创建人工调查队列**。不自动提交、放行、白名单或通知。
+3. Skill 文档与 `contract.json` 必须共同维护；真正的权限限制在 `PolicyGuard` 和工具注册表的运行时代码里执行。不同命中不得共享身份结论。
+4. 模型只负责结构化事实候选和必要的文本理解，提取结果 `checked=false`，不允许自证已核实；不得将内部商户资料发到未经批准的模型端点。
+5. 真实 LN/BOSS、Web、QCC/注册处连通、任务断点恢复、生产身份认证与实时外部调用性能测试仍未实现；**不要在 README 上宣称已实现**。
+
+## 继续开发的优先次序
+
+- 先把经授权的只读数据适配器接入 `InvestigationAgent`，保证真实来源、工具查询、证据定位和耗时事件完整；需要关注项目中的显式 Skill/Tool 合约。
+- 有真实可用的工具后，再在 PolicyGuard 约束下接入可选 LLM 的调查规划；不要把路由判断权交给模型，也不要用模型“监工”增加延迟。
+- 再补多工单持久运行/中断恢复、URL 安全、并发限额与用户权限，最后评估真实场景性能和业务规则准确率。
+
+所有提交请附代码、测试、模块 README，使用**纯合成 fixture**；GitHub 仓库不得包含真实商户资料、Cookie 或 API Key。

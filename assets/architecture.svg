@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 260" role="img" aria-labelledby="t d">
+<title id="t">LN Intelligent Screening Agent architecture</title>
+<desc id="d">Local Web Workbench receives events from the orchestrator and deterministic router, using skills, tools, rules, evidence and disposition writer.</desc>
+<rect width="1060" height="260" rx="18" fill="#f8fafc"/>
+<g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" text-anchor="middle">
+<rect x="22" y="66" width="204" height="128" rx="13" fill="#152844"/>
+<text x="124" y="100" font-size="15" font-weight="700" fill="#fff">Local Workbench</text>
+<text x="124" y="127" font-size="12" fill="#bbd3f3">Live SSE · parallel hits</text>
+<text x="124" y="149" font-size="12" fill="#bbd3f3">timings · prior reviews</text>
+<text x="124" y="174" font-size="11" fill="#7ef0c0">Read-only</text>
+<rect x="272" y="66" width="194" height="128" rx="13" fill="#e8eefb" stroke="#a0b8e9"/>
+<text x="369" y="107" font-size="15" font-weight="700" fill="#23436c">Orchestrator</text>
+<text x="369" y="132" font-size="12" fill="#476485">Single writer / scheduling</text>
+<text x="369" y="158" font-size="12" fill="#476485">Per-hit event stream</text>
+<rect x="512" y="66" width="214" height="128" rx="13" fill="#e8eefb" stroke="#a0b8e9"/>
+<text x="619" y="106" font-size="15" font-weight="700" fill="#23436c">Decision Router</text>
+<text x="619" y="132" font-size="12" fill="#476485">Rules + PolicyGuard</text>
+<text x="619" y="158" font-size="12" fill="#476485">Risk Gate · next action</text>
+<rect x="772" y="40" width="263" height="180" rx="13" fill="#fff" stroke="#c7d9f2"/>
+<text x="904" y="74" font-size="15" font-weight="700" fill="#23436c">Execution capabilities</text>
+<text x="904" y="106" font-size="12" fill="#476485">Skills + approved tools</text>
+<text x="904" y="132" font-size="12" fill="#476485">Document / Evidence / LLM*</text>
+<text x="904" y="158" font-size="12" fill="#476485">Disposition Writer</text>
+<text x="904" y="188" font-size="11" fill="#8b9fba">* Optional, disabled by default</text>
+</g>
+<g fill="none" stroke="#6190d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M228 131 H266"/><path d="M260 125 L267 131 L260 137"/><path d="M468 131 H506"/><path d="M500 125 L507 131 L500 137"/><path d="M728 131 H766"/><path d="M760 125 L767 131 L760 137"/></g>
+<text x="23" y="241" font-family="sans-serif" font-size="11" fill="#60738d">Synthetic offline mode is fully runnable · no external screening writeback</text>
+</svg>

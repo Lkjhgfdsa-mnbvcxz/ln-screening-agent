@@ -1,0 +1,16 @@
+{
+  "case_id": "SYN-CASE-SEMICONDUCTOR-001",
+  "context": {"application_ref": "SYNTHETIC-GPT-001"},
+  "subjects": [{"subject_id": "merchant_001", "entity_type": "company", "role": "merchant", "facts": [
+    {"side": "applicant", "field": "company_name", "value": "MOCK NOVA SEMICONDUCTOR LIMITED", "evidence_id": "SYN:KYB:CO-NAME", "origin": "kyb_verified", "checked": true},
+    {"side": "applicant", "field": "address", "value": "Unit 11, Example Street", "evidence_id": "SYN:KYB:REGISTERED-ADDR", "origin": "kyb_verified", "checked": true, "context": "REGISTERED_ADDRESS"}
+  ]}],
+  "hits": [{"hit_id": "LN-SYN-CRITICAL-001", "subject_id": "merchant_001", "category": "enforcement", "entity_type": "company", "facts": [
+    {"side": "hit", "field": "company_name", "value": "MOCK NOVA SEMICONDUCTOR LIMITED", "evidence_id": "SYN:LN:CO-NAME", "origin": "ln_structured", "checked": true},
+    {"side": "hit", "field": "address", "value": "Unit 40, Sample Avenue", "evidence_id": "SYN:LN:REGISTERED-ADDR", "origin": "ln_structured", "checked": true, "context": "REGISTERED_ADDRESS"}
+  ], "risk_event": {
+    "summary": "合成名单主体被列入某出口管制实体清单",
+    "severity": "critical", "source_ref": "SYN:LN:RISK-EVENT-001",
+    "material_context": [{"text": "实际经营地址尚未核实", "evidence_id": "SYN:KYB:LOCATION-REVIEW"}]
+  }, "screening_url": "https://example.invalid/synthetic/checklist/001", "research_keys": []}]
+}

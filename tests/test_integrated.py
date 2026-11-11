@@ -8,7 +8,7 @@ from ln_agent import Case, Policy, Orchestrator, FixtureResearchTool
 from ln_agent.risk_gate import RiskGate
 from ln_agent.models import Fact, Hit
 from ln_agent.policy_guard import PolicyGuard
-from run_two_cases import run_pair
+from scripts.run_two_cases import run_pair
 
 ROOT=Path(__file__).resolve().parents[1]
 

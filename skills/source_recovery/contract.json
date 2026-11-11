@@ -1,0 +1,23 @@
+{
+  "id": "SKILL_SOURCE_RECOVERY_V1",
+  "version": "1.0",
+  "scope": "source_recovery",
+  "trigger_prefixes": [
+    "official:",
+    "web:",
+    "ln:"
+  ],
+  "allowed_tool_names": [
+    "fixture_research"
+  ],
+  "output": [
+    "attempt_log",
+    "alternate_source_lead"
+  ],
+  "prohibited_shortcuts": [
+    "死链视为无风险",
+    "猜测构造附件 URL",
+    "无来源标记事实已核实"
+  ],
+  "read_only": true
+}

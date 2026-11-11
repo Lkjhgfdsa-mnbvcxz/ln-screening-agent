@@ -1,0 +1,42 @@
+{
+  "id": "SKILL_ADDRESS_LN_V1",
+  "fields": [
+    "address",
+    "jurisdiction",
+    "room",
+    "registered_entities",
+    "date"
+  ],
+  "preferred_sources": [
+    "ln",
+    "registry",
+    "official",
+    "doc",
+    "web"
+  ],
+  "allowed_research_sources": [
+    "ln",
+    "registry",
+    "official",
+    "doc",
+    "web"
+  ],
+  "blocked_exclusion_fields": [
+    "address",
+    "region",
+    "room",
+    "jurisdiction"
+  ],
+  "prohibited_shortcuts": [
+    "共享办公地址即制裁命中",
+    "地址字符串不同即不存在关联"
+  ],
+  "version": "1.0",
+  "entity_type": "address",
+  "allowed_tool_names": [
+    "fixture_research",
+    "document_intelligence"
+  ],
+  "read_only": true,
+  "runtime_role": "primary_identity_investigation"
+}

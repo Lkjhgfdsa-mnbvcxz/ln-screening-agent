@@ -13,5 +13,8 @@ def validate_extraction(payload: list[dict]) -> list[Fact]:
         data = dict(item)
         data["origin"] = "model_extracted"
         data["checked"] = False
+        data["verification_id"] = ""
+        data["extraction_verified"] = None
+        data["content_verified"] = None
         result.append(Fact.from_dict(data))
     return result

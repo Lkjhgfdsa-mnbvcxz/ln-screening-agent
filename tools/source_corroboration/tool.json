@@ -1,0 +1,11 @@
+{
+  "id": "source_corroboration",
+  "title": "独立来源佐证",
+  "status": "implemented_internal",
+  "runtime_entrypoint": "ln_agent.corroboration.assess_corroboration",
+  "allowed_prefixes": [],
+  "network": false,
+  "writes_external": false,
+  "purpose": "区分同源转载、独立佐证与相互矛盾",
+  "read_only": true
+}

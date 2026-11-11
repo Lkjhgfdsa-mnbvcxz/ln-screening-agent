@@ -1,0 +1,55 @@
+{
+  "id": "SKILL_PERSON_LN_V1",
+  "fields": [
+    "name",
+    "dob",
+    "document_number",
+    "gender",
+    "employer",
+    "role",
+    "acted_in_year",
+    "address",
+    "pep_status",
+    "photo_comparison",
+    "event_recency",
+    "region",
+    "company_name"
+  ],
+  "preferred_sources": [
+    "ln",
+    "official",
+    "doc",
+    "web",
+    "qcc"
+  ],
+  "allowed_research_sources": [
+    "ln",
+    "official",
+    "doc",
+    "web",
+    "qcc"
+  ],
+  "blocked_exclusion_fields": [
+    "region",
+    "address",
+    "business_region",
+    "photo_comparison",
+    "pep_status",
+    "role",
+    "employer"
+  ],
+  "prohibited_shortcuts": [
+    "职位推定出生年份",
+    "跨省居住即排除",
+    "服刑且存在公司即排除",
+    "仅凭人脸照片自动排除"
+  ],
+  "version": "1.0",
+  "entity_type": "person",
+  "allowed_tool_names": [
+    "fixture_research",
+    "document_intelligence"
+  ],
+  "read_only": true,
+  "runtime_role": "primary_identity_investigation"
+}

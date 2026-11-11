@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from ln_agent import Case, Policy, Orchestrator, FixtureResearchTool
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 CASES = {
     "strong_link": ROOT / "examples/case_true_link.json",
     "false_positive": ROOT / "examples/case_false_positive.json",
@@ -42,7 +42,7 @@ def main():
     target.write_text(json.dumps(data, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     for label,info in data["cases"].items():
         d=info["report"]["results"][0]
-        print(f"{label}: {d['route']} | identity={d['identity']} | manual_review={d['review_required']} | authorized_exclusion={d['exclusion_authorized']}")
+        print(f"{label}: {d['route']} | identity={d['identity']} | report_draft={d['disposition']['report_recommended']} | manual_queue={d['disposition']['manual_queue_required']}")
     print("PASS: both independent synthetic cases; report:", target)
 
 if __name__ == "__main__":

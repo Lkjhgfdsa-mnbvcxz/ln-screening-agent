@@ -1,0 +1,20 @@
+[
+  {
+    "case_id": "DEMO-STRONG-LINK-001",
+    "hit_id": "HIT-STRONG-LINK-001",
+    "conclusion": "true_hit",
+    "reported": false,
+    "recorded_at": "2026-10-21T10:30:00+08:00",
+    "source_ref": "SYNTHETIC:PRIOR:REVIEW-1",
+    "reviewer_label": "synthetic reviewer"
+  },
+  {
+    "case_id": "DEMO-FALSE-POSITIVE-001",
+    "hit_id": "HIT-FALSE-POSITIVE-001",
+    "conclusion": "true_hit",
+    "reported": null,
+    "recorded_at": "2026-10-22T11:00:00+08:00",
+    "source_ref": "SYNTHETIC:PRIOR:REVIEW-2",
+    "reviewer_label": "synthetic reviewer"
+  }
+]

@@ -6,6 +6,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from .policy import Policy
 from .models import Fact, Hit, Case
+from .tool_catalog import available_for_call, load_tool
+from .skill_catalog import load_skill
+from .risk_categories import any_category
 
 @dataclass(frozen=True)
 class GateResult:
@@ -43,6 +46,11 @@ class PolicyGuard:
         # Checkpoint 2: actual runtime tool allowlist + skill scope + budget.
         if name not in self.policy.allowed_tool_names:
             return CheckResult(False, "tool not on approved local allowlist")
+        ok, message = available_for_call(name, source_key=key)
+        if not ok:
+            return CheckResult(False, message)
+        if "allowed_tool_names" in skill and name not in skill["allowed_tool_names"]:
+            return CheckResult(False, "tool not allowed by selected Skill contract")
         try:
             self.validate_action(key, skill, count)
         except PolicyViolation as exc:
@@ -59,10 +67,10 @@ class PolicyGuard:
 
     def assess_risk_gate(self,hit:Hit) -> GateResult:
         flags=[];reasons=[]
-        if hit.category in self.policy.unresolved_mandatory_review:
+        if any_category(hit.category, self.policy.unresolved_mandatory_review):
             flags.append("SCREENING_REVIEW_REQUIRED")
             reasons.append("需保留名单核验人工复核，不代表已确认关联或必报合规")
-        if hit.category in self.policy.mandatory_compliance_categories:
+        if any_category(hit.category, self.policy.mandatory_compliance_categories):
             flags.append("COMPLIANCE_ESCALATION_REQUIRED")
             reasons.append("命中由外部批准的合规上报类别配置；仍需身份核验")
         return GateResult(tuple(flags),tuple(reasons))
@@ -95,6 +103,16 @@ class PolicyGuard:
                 raise PolicyViolation(f"unapproved hard rule candidate: {rule}")
         if not skill.get("prohibited_shortcuts") or not skill.get("blocked_exclusion_fields"):
             raise PolicyViolation("skill missing forbidden-inference contract")
+        # This is a real policy check on the currently selected Skill contract,
+        # rather than a string-only instruction in SKILL.md.
+        rule_field_map = {
+            "DOB_EXACT_CONFLICT": frozenset({"dob"}),
+            "PRE_BIRTH_ACTION_IMPOSSIBLE": frozenset({"dob", "acted_in_year"}),
+        }
+        blocked = set(skill["blocked_exclusion_fields"])
+        for rule in exclusion_rules:
+            if rule_field_map[rule] & blocked:
+                raise PolicyViolation(f"Skill blocks a hard-rule field: {rule}")
 
     def authorized_exclusion(self,rule_ids:list[str])->bool:
         # Candidate rules are never approved automatically just because they ran.
@@ -105,3 +123,28 @@ class PolicyGuard:
             if (f.side!="hit" or f.origin!="reviewer_verified" or not f.checked or
                 not f.verification_id or f.verification_id not in valid_verification_ids):
                 raise PolicyViolation("reviewed fact lacks trusted verification ledger entry")
+
+    def validate_disposition_draft(self, disposition: dict) -> None:
+        """Enforce machine contract at the actual disposition-output boundary."""
+        skill = load_skill("disposition_reporting")
+        tool = load_tool("disposition_writer")
+        if tool["status"] != "implemented_internal" or tool["writes_external"] is not False:
+            raise PolicyViolation("disposition tool unavailable or unsafe")
+        for key in skill["required_output_fields"]:
+            if key not in disposition:
+                raise PolicyViolation(f"disposition missing required field: {key}")
+        if not isinstance(disposition["internal_note"], str) or not disposition["internal_note"].strip():
+            raise PolicyViolation("disposition requires concise internal note")
+        if disposition.get("automatically_sent") or disposition.get("automatically_cleared"):
+            raise PolicyViolation("automatic report transmission or clearance is forbidden")
+        if disposition.get("attribution", "").startswith("LN风险事由") and not disposition.get("source_refs"):
+            raise PolicyViolation("source-attributed risk statement missing source references")
+        if disposition["report_recommended"] and not disposition.get("compliance_message"):
+            raise PolicyViolation("report draft is missing")
+        if not disposition["report_recommended"] and disposition.get("compliance_message"):
+            raise PolicyViolation("unsolicited compliance draft is forbidden")
+        if disposition.get("manual_queue_required") and not disposition.get("compliance_escalation_required_by_policy"):
+            # Human queue is separate from compliance escalation; an explicit
+            # configured human exception is allowed, but never the fallback.
+            if not self.policy.mandatory_human_queue_categories:
+                raise PolicyViolation("unsanctioned human queue")

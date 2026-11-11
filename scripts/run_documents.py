@@ -1,6 +1,6 @@
 """Local document mode. No network / LN system access / automatic dispositions.
 
-python run_documents.py examples/document_case.json examples/document_manifest.json --out document_report.json
+python3 -m scripts.run_documents examples/document_case.json examples/document_manifest.json --out examples/document_demo_report.json
 """
 from __future__ import annotations
 import argparse,json
