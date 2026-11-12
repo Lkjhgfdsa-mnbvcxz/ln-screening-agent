@@ -1,8 +1,31 @@
 {
-  "schema": "ln-agent-demo-workbench/1.1",
+  "schema": "ln-agent-demo-workbench/1.2",
   "disclaimer": "SYNTHETIC ONLY — 所有工单号、主体、命中记录、域名与说明均为虚构；仅复现授权本地验证的运行形态与量级，不含任何真实业务数据。",
   "generated_by": "scripts/build_demo.py",
-  "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织。并发模型：8 个工单主体同时开始、互不干扰，每个主体内部再由 4 个 worker 并行处理自己的命中；静态版无需 Python 后端。",
+  "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织。每条命中同时展示『业务结论草稿』与『最终指标』两个轴；最终指标是派生统计口径，不改变业务结论、不自动放行。并发模型：8 个工单主体同时开始、互不干扰，每个主体内部再由 4 个 worker 并行处理自己的命中；静态版无需 Python 后端。",
+  "final_indicator": {
+    "name": "最终指标",
+    "kind": "TRIAGE_METRIC",
+    "labels": [
+      "命中",
+      "疑似命中",
+      "误报·未命中"
+    ],
+    "rules": {
+      "FI-1": "命中：证件号 / 企业注册号 / 出生日期硬匹配，或业务结论草稿已确认命中（strong_link）。",
+      "FI-2": "疑似命中：名单事由重大（high/critical 且有来源标识）且事发地与主体/记录所在地一致；或已有上报草稿、政策要求升级、来源冲突/工具阻断（这些不得归入误报）。",
+      "FI-3": "误报·未命中：无特别信息——例如命中侧根本拿不到只有通知里才有的身份信息，且无重大事由或事发地不一致。按误报归集，仅作复核优先级与统计口径。"
+    },
+    "boundary": "最终指标是 Rule Engine → PolicyGuard → Decision Router → Disposition 之后的下游派生指标；不改变业务结论、不改写 business_conclusion / recommendation / route，不自动放行、清除命中、发送报告，也不因信息不足创建人工调查任务。工具阻断与来源冲突一律保留为疑似命中。",
+    "metric": "需人工复核率 =（命中 + 疑似命中）/ 全部命中记录",
+    "escalation_hits": 17,
+    "escalation_rate": 0.1104,
+    "distribution": {
+      "命中": 1,
+      "疑似命中": 16,
+      "误报·未命中": 137
+    }
+  },
   "concurrency": {
     "model": "m 个工单主体同时开始，每个主体内部 4 workers 按命中并行",
     "cases_start_together": true,
@@ -31,6 +54,13 @@
       "未命中": 5,
       "无法确定": 137
     },
+    "final_indicator_distribution": {
+      "命中": 1,
+      "疑似命中": 16,
+      "误报·未命中": 137
+    },
+    "escalation_hits": 17,
+    "escalation_rate": 0.1104,
     "largest_case_hits": 88
   },
   "cases": [
@@ -49,6 +79,14 @@
         "未命中": 1,
         "无法确定": 45
       },
+      "final_indicator": "疑似命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 5,
+        "误报·未命中": 44
+      },
+      "escalation_hits": 5,
+      "escalation_rate": 0.102,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -137,7 +175,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H002",
@@ -171,7 +225,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70001002（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H003",
@@ -205,7 +275,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70002003（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H004",
@@ -239,7 +325,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70003004（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H005",
@@ -273,7 +375,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70004005（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H006",
@@ -307,7 +425,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70005006（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H007",
@@ -341,7 +475,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70006007（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H008",
@@ -354,7 +504,7 @@
           "conclusion": "无法确定",
           "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 408,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 registry.example.org；命中侧 LN 记录号 70007008（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；但名单事由等级为重大，且事发地与入网主体地区一致，按最终指标保留为疑似命中待复核。 记录源主域名 registry.example.org；命中侧 LN 记录号 70007008（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -375,7 +525,24 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "名单载明事发地与入网主体地区一致（结构化字段精确匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "无确认命中证据，保留疑似命中待复核",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70007008（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "东北",
+          "subject_region": "东北",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H009",
@@ -409,7 +576,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70008009（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H010",
@@ -443,7 +626,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70009010（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H011",
@@ -477,7 +676,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70010011（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H012",
@@ -511,7 +726,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70011012（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H013",
@@ -545,7 +776,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70012013（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H014",
@@ -579,7 +826,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70013014（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H015",
@@ -613,7 +876,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70014015（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H016",
@@ -626,7 +905,7 @@
           "conclusion": "无法确定",
           "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 402,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 70015016（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；但名单事由等级为重大，且事发地与入网主体地区一致，按最终指标保留为疑似命中待复核。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 70015016（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -647,7 +926,24 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "名单载明事发地与入网主体地区一致（结构化字段精确匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "无确认命中证据，保留疑似命中待复核",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70015016（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "东北",
+          "subject_region": "东北",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H017",
@@ -681,7 +977,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70016017（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H018",
@@ -715,7 +1027,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70017018（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H019",
@@ -749,7 +1077,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70018019（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H020",
@@ -783,7 +1127,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70019020（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H021",
@@ -817,7 +1177,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70020021（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H022",
@@ -851,7 +1227,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70021022（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H023",
@@ -885,7 +1277,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70022023（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H024",
@@ -895,10 +1303,10 @@
           "ln_score": 100,
           "ln_id": "70023024",
           "source_domain": "archive.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 396,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 archive.example.org；命中侧 LN 记录号 70023024（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 archive.example.org；命中侧 LN 记录号 70023024（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -917,9 +1325,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70023024（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "东北",
+          "subject_region": "东北",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H025",
@@ -953,7 +1378,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70024025（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H026",
@@ -987,7 +1428,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70025026（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H027",
@@ -1021,7 +1478,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70026027（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H028",
@@ -1055,7 +1528,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70027028（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H029",
@@ -1089,7 +1578,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70028029（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H030",
@@ -1123,7 +1628,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70029030（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H031",
@@ -1157,7 +1678,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70030031（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H032",
@@ -1167,10 +1704,10 @@
           "ln_score": 100,
           "ln_id": "70031032",
           "source_domain": "registry.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 390,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 registry.example.org；命中侧 LN 记录号 70031032（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 registry.example.org；命中侧 LN 记录号 70031032（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -1189,9 +1726,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70031032（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "东北",
+          "subject_region": "东北",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H033",
@@ -1225,7 +1779,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70032033（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H034",
@@ -1259,7 +1829,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70033034（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H035",
@@ -1293,7 +1879,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70034035（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H036",
@@ -1327,7 +1929,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70035036（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H037",
@@ -1361,7 +1979,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70036037（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H038",
@@ -1395,7 +2029,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70037038（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H039",
@@ -1429,7 +2079,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70038039（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H040",
@@ -1439,10 +2105,10 @@
           "ln_score": 100,
           "ln_id": "70039040",
           "source_domain": "bulletin.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 384,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 70039040（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 70039040（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -1461,9 +2127,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70039040（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "东北",
+          "subject_region": "东北",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H041",
@@ -1497,7 +2180,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70040041（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H042",
@@ -1531,7 +2230,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70041042（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H043",
@@ -1565,7 +2280,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70042043（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H044",
@@ -1599,7 +2330,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 70043044（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H045",
@@ -1633,7 +2380,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 70044045（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H046",
@@ -1643,10 +2406,10 @@
           "ln_score": 100,
           "ln_id": "70045046",
           "source_domain": "bulletin.example.org",
-          "conclusion": "疑似命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 403,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 70045046（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 70045046（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -1665,10 +2428,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 70045046（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H047",
@@ -1678,10 +2456,10 @@
           "ln_score": 100,
           "ln_id": "70046047",
           "source_domain": "media.example.org",
-          "conclusion": "疑似命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 414,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 media.example.org；命中侧 LN 记录号 70046047（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 media.example.org；命中侧 LN 记录号 70046047（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -1700,10 +2478,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 70046047（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H048",
@@ -1713,10 +2506,10 @@
           "ln_score": 100,
           "ln_id": "70047048",
           "source_domain": "archive.example.org",
-          "conclusion": "疑似命中",
+          "conclusion": "未命中",
           "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 378,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 archive.example.org；命中侧 LN 记录号 70047048（非证件号）。",
+          "reason": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。 记录源主域名 archive.example.org；命中侧 LN 记录号 70047048（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -1735,10 +2528,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 70047048（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H049",
@@ -1748,10 +2556,10 @@
           "ln_score": 100,
           "ln_id": "70048049",
           "source_domain": "sanctions.example.org",
-          "conclusion": "未命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 389,
-          "reason": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 70048049（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 70048049（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -1770,9 +2578,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 70048049（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         }
       ]
     },
@@ -1791,6 +2615,14 @@
         "未命中": 2,
         "无法确定": 82
       },
+      "final_indicator": "疑似命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 6,
+        "误报·未命中": 82
+      },
+      "escalation_hits": 6,
+      "escalation_rate": 0.0682,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -1874,7 +2706,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H002",
@@ -1908,7 +2756,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71001002（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H003",
@@ -1942,7 +2806,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71002003（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H004",
@@ -1976,7 +2856,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71003004（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H005",
@@ -2010,7 +2906,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71004005（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H006",
@@ -2044,7 +2956,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71005006（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H007",
@@ -2078,7 +3006,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71006007（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H008",
@@ -2091,7 +3035,7 @@
           "conclusion": "无法确定",
           "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 415,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 media.example.org；命中侧 LN 记录号 71007008（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；但名单事由等级为重大，且事发地与入网主体地区一致，按最终指标保留为疑似命中待复核。 记录源主域名 media.example.org；命中侧 LN 记录号 71007008（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -2112,7 +3056,24 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "名单载明事发地与入网主体地区一致（结构化字段精确匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "无确认命中证据，保留疑似命中待复核",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71007008（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华东",
+          "subject_region": "华东",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H009",
@@ -2146,7 +3107,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71008009（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H010",
@@ -2180,7 +3157,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71009010（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H011",
@@ -2214,7 +3207,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71010011（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H012",
@@ -2248,7 +3257,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71011012（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H013",
@@ -2282,7 +3307,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71012013（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H014",
@@ -2316,7 +3357,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71013014（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H015",
@@ -2350,7 +3407,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71014015（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H016",
@@ -2363,7 +3436,7 @@
           "conclusion": "无法确定",
           "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 409,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71015016（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；但名单事由等级为重大，且事发地与入网主体地区一致，按最终指标保留为疑似命中待复核。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71015016（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -2384,7 +3457,24 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "名单载明事发地与入网主体地区一致（结构化字段精确匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "无确认命中证据，保留疑似命中待复核",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71015016（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华东",
+          "subject_region": "华东",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H017",
@@ -2418,7 +3508,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71016017（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H018",
@@ -2452,7 +3558,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71017018（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H019",
@@ -2486,7 +3608,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71018019（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H020",
@@ -2520,7 +3658,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71019020（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H021",
@@ -2554,7 +3708,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71020021（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H022",
@@ -2588,7 +3758,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71021022（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H023",
@@ -2622,7 +3808,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71022023（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H024",
@@ -2632,10 +3834,10 @@
           "ln_score": 100,
           "ln_id": "71023024",
           "source_domain": "cases.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 403,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 cases.example.org；命中侧 LN 记录号 71023024（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 cases.example.org；命中侧 LN 记录号 71023024（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -2654,9 +3856,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71023024（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华东",
+          "subject_region": "华东",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H025",
@@ -2690,7 +3909,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71024025（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H026",
@@ -2724,7 +3959,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71025026（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H027",
@@ -2758,7 +4009,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71026027（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H028",
@@ -2792,7 +4059,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71027028（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H029",
@@ -2826,7 +4109,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71028029（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H030",
@@ -2860,7 +4159,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71029030（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H031",
@@ -2894,7 +4209,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71030031（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H032",
@@ -2904,10 +4235,10 @@
           "ln_score": 100,
           "ln_id": "71031032",
           "source_domain": "media.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 397,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 media.example.org；命中侧 LN 记录号 71031032（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 media.example.org；命中侧 LN 记录号 71031032（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -2926,9 +4257,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71031032（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华东",
+          "subject_region": "华东",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H033",
@@ -2962,7 +4310,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71032033（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H034",
@@ -2996,7 +4360,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71033034（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H035",
@@ -3030,7 +4410,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71034035（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H036",
@@ -3064,7 +4460,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71035036（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H037",
@@ -3098,7 +4510,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71036037（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H038",
@@ -3132,7 +4560,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71037038（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H039",
@@ -3166,7 +4610,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71038039（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H040",
@@ -3176,10 +4636,10 @@
           "ln_score": 100,
           "ln_id": "71039040",
           "source_domain": "sanctions.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 391,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71039040（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71039040（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -3198,9 +4658,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71039040（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华东",
+          "subject_region": "华东",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H041",
@@ -3234,7 +4711,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71040041（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H042",
@@ -3268,7 +4761,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71041042（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H043",
@@ -3302,7 +4811,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71042043（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H044",
@@ -3336,7 +4861,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71043044（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H045",
@@ -3370,7 +4911,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71044045（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H046",
@@ -3404,7 +4961,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71045046（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H047",
@@ -3438,7 +5011,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71046047（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H048",
@@ -3448,10 +5037,10 @@
           "ln_score": 100,
           "ln_id": "71047048",
           "source_domain": "cases.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "疑似命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 385,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 cases.example.org；命中侧 LN 记录号 71047048（非证件号）。",
+          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 cases.example.org；命中侧 LN 记录号 71047048（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -3470,9 +5059,26 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "INVESTIGATE · workbuddy_llm_capture",
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71047048（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华东",
+          "subject_region": "华东",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H049",
@@ -3506,7 +5112,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71048049（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H050",
@@ -3540,7 +5162,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71049050（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H051",
@@ -3574,7 +5212,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71050051（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H052",
@@ -3608,7 +5262,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71051052（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H053",
@@ -3642,7 +5312,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71052053（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H054",
@@ -3676,7 +5362,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71053054（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H055",
@@ -3710,7 +5412,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71054055（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H056",
@@ -3720,10 +5438,10 @@
           "ln_score": 100,
           "ln_id": "71055056",
           "source_domain": "media.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "未命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 379,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 media.example.org；命中侧 LN 记录号 71055056（非证件号）。",
+          "reason": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。 记录源主域名 media.example.org；命中侧 LN 记录号 71055056（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -3742,9 +5460,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71055056（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H057",
@@ -3778,7 +5512,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71056057（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H058",
@@ -3812,7 +5562,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71057058（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H059",
@@ -3846,7 +5612,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71058059（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H060",
@@ -3880,7 +5662,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71059060（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H061",
@@ -3914,7 +5712,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71060061（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H062",
@@ -3948,7 +5762,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71061062（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H063",
@@ -3982,7 +5812,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71062063（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H064",
@@ -3992,10 +5838,10 @@
           "ln_score": 100,
           "ln_id": "71063064",
           "source_domain": "sanctions.example.org",
-          "conclusion": "无法确定",
-          "conclusion_status": "NO_CONCLUSION",
+          "conclusion": "未命中",
+          "conclusion_status": "DRAFT_NOT_APPROVED",
           "duration_ms": 420,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71063064（非证件号）。",
+          "reason": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71063064（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4014,9 +5860,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "RESIDUAL_SUSPICION"
+            "WRITE_DISPOSITION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71063064（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H065",
@@ -4050,7 +5912,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71064065（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H066",
@@ -4084,7 +5962,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71065066（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H067",
@@ -4118,7 +6012,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71066067（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H068",
@@ -4152,7 +6062,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71067068（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H069",
@@ -4186,7 +6112,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71068069（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H070",
@@ -4220,7 +6162,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71069070（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H071",
@@ -4254,7 +6212,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71070071（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H072",
@@ -4288,7 +6262,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71071072（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H073",
@@ -4322,7 +6312,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71072073（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H074",
@@ -4356,7 +6362,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71073074（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H075",
@@ -4390,7 +6412,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71074075（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H076",
@@ -4424,7 +6462,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71075076（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H077",
@@ -4458,7 +6512,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71076077（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H078",
@@ -4492,7 +6562,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71077078（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H079",
@@ -4526,7 +6612,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71078079（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H080",
@@ -4560,7 +6662,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71079080（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H081",
@@ -4594,7 +6712,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71080081（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H082",
@@ -4628,7 +6762,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71081082（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H083",
@@ -4638,10 +6788,10 @@
           "ln_score": 100,
           "ln_id": "71082083",
           "source_domain": "registry.example.org",
-          "conclusion": "疑似命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 394,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 registry.example.org；命中侧 LN 记录号 71082083（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 registry.example.org；命中侧 LN 记录号 71082083（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4660,10 +6810,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 71082083（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H084",
@@ -4673,10 +6838,10 @@
           "ln_score": 100,
           "ln_id": "71083084",
           "source_domain": "cases.example.org",
-          "conclusion": "疑似命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 405,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 cases.example.org；命中侧 LN 记录号 71083084（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 cases.example.org；命中侧 LN 记录号 71083084（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4695,10 +6860,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 71083084（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H085",
@@ -4708,10 +6888,10 @@
           "ln_score": 100,
           "ln_id": "71084085",
           "source_domain": "bulletin.example.org",
-          "conclusion": "疑似命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 416,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 71084085（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 bulletin.example.org；命中侧 LN 记录号 71084085（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4730,10 +6910,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 71084085（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H086",
@@ -4743,10 +6938,10 @@
           "ln_score": 99,
           "ln_id": "71085086",
           "source_domain": "media.example.org",
-          "conclusion": "疑似命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 380,
-          "reason": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。 记录源主域名 media.example.org；命中侧 LN 记录号 71085086（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 media.example.org；命中侧 LN 记录号 71085086（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4765,10 +6960,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "INVESTIGATE · workbuddy_llm_capture",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 71085086（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H087",
@@ -4778,10 +6988,10 @@
           "ln_score": 100,
           "ln_id": "71086087",
           "source_domain": "archive.example.org",
-          "conclusion": "未命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 391,
-          "reason": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。 记录源主域名 archive.example.org；命中侧 LN 记录号 71086087（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 archive.example.org；命中侧 LN 记录号 71086087（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4800,9 +7010,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 71086087（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H088",
@@ -4812,10 +7038,10 @@
           "ln_score": 100,
           "ln_id": "71087088",
           "source_domain": "sanctions.example.org",
-          "conclusion": "未命中",
-          "conclusion_status": "DRAFT_NOT_APPROVED",
+          "conclusion": "无法确定",
+          "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 402,
-          "reason": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71087088（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 sanctions.example.org；命中侧 LN 记录号 71087088（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -4834,9 +7060,25 @@
             "EVALUATE",
             "INVESTIGATE · workbuddy_browser_readonly",
             "EVALUATE",
-            "WRITE_DISPOSITION"
+            "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 71087088（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         }
       ]
     },
@@ -4854,6 +7096,14 @@
         "疑似命中": 2,
         "无法确定": 8
       },
+      "final_indicator": "疑似命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 3,
+        "误报·未命中": 7
+      },
+      "escalation_hits": 3,
+      "escalation_rate": 0.3,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -4942,7 +7192,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 72000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H002",
@@ -4976,7 +7242,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 72001002（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H003",
@@ -5010,7 +7292,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 5
+          "source_count": 5,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 72002003（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H004",
@@ -5044,7 +7342,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 6
+          "source_count": 6,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 72003004（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H005",
@@ -5078,7 +7392,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 7
+          "source_count": 7,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 72004005（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H006",
@@ -5112,7 +7442,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 8
+          "source_count": 8,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 archive.example.org；命中侧 LN 记录号 72005006（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H007",
@@ -5146,7 +7492,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 9
+          "source_count": 9,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 72006007（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H008",
@@ -5159,7 +7521,7 @@
           "conclusion": "无法确定",
           "conclusion_status": "NO_CONCLUSION",
           "duration_ms": 416,
-          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。 记录源主域名 registry.example.org；命中侧 LN 记录号 72007008（非证件号）。",
+          "reason": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；但名单事由等级为重大，且事发地与入网主体地区一致，按最终指标保留为疑似命中待复核。 记录源主域名 registry.example.org；命中侧 LN 记录号 72007008（非证件号）。",
           "stages": [
             "排队",
             "规则核验",
@@ -5180,7 +7542,24 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 10
+          "source_count": 10,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "名单载明事发地与入网主体地区一致（结构化字段精确匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "无确认命中证据，保留疑似命中待复核",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 72007008（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华北",
+          "subject_region": "华北",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H009",
@@ -5215,7 +7594,23 @@
             "INVESTIGATE · workbuddy_llm_capture",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 cases.example.org；命中侧 LN 记录号 72008009（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华南",
+          "subject_region": "华南",
+          "location_consistent": true,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H010",
@@ -5250,7 +7645,23 @@
             "INVESTIGATE · workbuddy_llm_capture",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 72009010（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "东北",
+          "subject_region": "东北",
+          "location_consistent": true,
+          "identity_fields_available": false
         }
       ]
     },
@@ -5268,6 +7679,14 @@
         "未命中": 1,
         "无法确定": 1
       },
+      "final_indicator": "误报·未命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 0,
+        "误报·未命中": 2
+      },
+      "escalation_hits": 0,
+      "escalation_rate": 0.0,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -5351,7 +7770,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 73000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H002",
@@ -5385,7 +7820,23 @@
             "EVALUATE",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 media.example.org；命中侧 LN 记录号 73001002（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         }
       ]
     },
@@ -5403,6 +7854,14 @@
         "疑似命中": 1,
         "无法确定": 1
       },
+      "final_indicator": "疑似命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 1,
+        "误报·未命中": 1
+      },
+      "escalation_hits": 1,
+      "escalation_rate": 0.5,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -5491,7 +7950,23 @@
             "EVALUATE",
             "RESIDUAL_SUSPICION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 74000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华东",
+          "location_consistent": false,
+          "identity_fields_available": false
         },
         {
           "hit_id": "SYN-H002",
@@ -5526,7 +8001,23 @@
             "INVESTIGATE · workbuddy_llm_capture",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 4
+          "source_count": 4,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 registry.example.org；命中侧 LN 记录号 74001002（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华北",
+          "subject_region": "华北",
+          "location_consistent": true,
+          "identity_fields_available": false
         }
       ]
     },
@@ -5543,6 +8034,14 @@
       "conclusion_distribution": {
         "疑似命中": 1
       },
+      "final_indicator": "疑似命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 1,
+        "误报·未命中": 0
+      },
+      "escalation_hits": 1,
+      "escalation_rate": 1.0,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -5627,7 +8126,23 @@
             "INVESTIGATE · workbuddy_llm_capture",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "疑似命中",
+          "final_indicator_rule": "FI-2",
+          "final_indicator_basis": [
+            "业务结论草稿=疑似命中，report_recommended=True",
+            "名单事由等级 critical，可引用来源标识 2 条",
+            "身份关联尚未确认，保留疑似命中待复核",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 75000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "critical",
+          "event_region": "华北",
+          "subject_region": "华北",
+          "location_consistent": true,
+          "identity_fields_available": false
         }
       ]
     },
@@ -5644,6 +8159,14 @@
       "conclusion_distribution": {
         "命中": 1
       },
+      "final_indicator": "命中",
+      "final_indicator_distribution": {
+        "命中": 1,
+        "疑似命中": 0,
+        "误报·未命中": 0
+      },
+      "escalation_hits": 1,
+      "escalation_rate": 1.0,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -5732,7 +8255,23 @@
             "EVALUATE",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "命中",
+          "final_indicator_rule": "FI-1",
+          "final_indicator_basis": [
+            "硬匹配规则命中：DOCUMENT_EXACT_MATCH / COMPANY_REGISTRATION_MATCH",
+            "业务结论草稿=命中，identity=strong_link",
+            "命中侧有独立身份字段可比",
+            "记录源主域名 sanctions.example.org；命中侧 LN 记录号 76000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "华南",
+          "location_consistent": false,
+          "identity_fields_available": true
         }
       ]
     },
@@ -5749,6 +8288,14 @@
       "conclusion_distribution": {
         "未命中": 1
       },
+      "final_indicator": "误报·未命中",
+      "final_indicator_distribution": {
+        "命中": 0,
+        "疑似命中": 0,
+        "误报·未命中": 1
+      },
+      "escalation_hits": 0,
+      "escalation_rate": 0.0,
       "profile": {
         "connector": "WorkBuddy 企查查连接器",
         "tools": [
@@ -5832,7 +8379,23 @@
             "EVALUATE",
             "WRITE_DISPOSITION"
           ],
-          "source_count": 3
+          "source_count": 3,
+          "final_indicator": "误报·未命中",
+          "final_indicator_rule": "FI-3",
+          "final_indicator_basis": [
+            "无可引用的重大名单事由（或事发地未形成一致匹配）",
+            "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+            "仅通知层信息缺失、无特别信息，按误报归集（不放行）",
+            "记录源主域名 bulletin.example.org；命中侧 LN 记录号 77000001（非证件号）"
+          ],
+          "final_indicator_status": "DRAFT_NOT_APPROVED",
+          "indicator_does_not_clear_hit": true,
+          "indicator_changes_business_conclusion": false,
+          "severity": "medium",
+          "event_region": "未知",
+          "subject_region": "东北",
+          "location_consistent": false,
+          "identity_fields_available": false
         }
       ]
     }

@@ -16,9 +16,15 @@ Outputs:
 overwrite it (the single-case replay is reachable by link from the demo).
 
 All identifiers, names, domains and reasons are fabricated. The *shape* (8
-checklists, 154 hits, 4 workers, ~103 ms per hit, one 88-hit and one 49-hit
+checklists, 154 hits, 4 workers, ~395 ms per hit, one 88-hit and one 49-hit
 checklist) mirrors an authorized local validation run; no real business datum
 is included.
+
+v0.9.6 adds the FINAL INDICATOR (最终指标): a deterministic, downstream triage
+metric derived from the same rule/evidence outputs.  FI-1 命中 / FI-2 疑似命中 /
+FI-3 误报·未命中.  It resolves the business-facing "无结论" bucket for review
+priority and statistics, but never rewrites business_conclusion and never
+clears or auto-reports a hit.
 """
 from __future__ import annotations
 
@@ -33,24 +39,31 @@ OUT_HTML = ROOT / "demo.html"
 OUT_INDEX = ROOT / "index.html"
 
 # (synthetic case label, subject, entity type, hit count, conclusion mix)
+# 严重待核 = business conclusion 无结论, but a serious source-attributed event
+# AND a consistent incident location => final indicator 疑似命中 (FI-2).
 CASES = [
     ("SYN-LN-2601", "Synth Shipping Holdings Ltd.", "企业", 49,
-     {"无法确定": 45, "疑似命中": 3, "未命中": 1, "命中": 0}),
+     {"无法确定": 43, "严重待核": 2, "疑似命中": 3, "未命中": 1, "命中": 0}),
     ("SYN-LN-2602", "合成样例 · 个人主体 A", "个人", 88,
-     {"无法确定": 82, "疑似命中": 4, "未命中": 2, "命中": 0}),
+     {"无法确定": 80, "严重待核": 2, "疑似命中": 4, "未命中": 2, "命中": 0}),
     ("SYN-LN-2603", "合成样例 · 个人主体 B", "个人", 10,
-     {"无法确定": 8, "疑似命中": 2, "未命中": 0, "命中": 0}),
+     {"无法确定": 7, "严重待核": 1, "疑似命中": 2, "未命中": 0, "命中": 0}),
     ("SYN-LN-2604", "合成样例 · 个人主体 C", "个人", 2,
-     {"无法确定": 1, "疑似命中": 0, "未命中": 1, "命中": 0}),
+     {"无法确定": 1, "严重待核": 0, "疑似命中": 0, "未命中": 1, "命中": 0}),
     ("SYN-LN-2605", "合成样例 · 个人主体 D", "个人", 2,
-     {"无法确定": 1, "疑似命中": 1, "未命中": 0, "命中": 0}),
+     {"无法确定": 1, "严重待核": 0, "疑似命中": 1, "未命中": 0, "命中": 0}),
     ("SYN-LN-2606", "SynthetIC Semiconductor Co., LIMITED", "企业", 1,
-     {"无法确定": 0, "疑似命中": 1, "未命中": 0, "命中": 0}),
+     {"无法确定": 0, "严重待核": 0, "疑似命中": 1, "未命中": 0, "命中": 0}),
     ("SYN-LN-2607", "合成样例 · 企业主体 E", "企业", 1,
-     {"无法确定": 0, "疑似命中": 0, "未命中": 0, "命中": 1}),
+     {"无法确定": 0, "严重待核": 0, "疑似命中": 0, "未命中": 0, "命中": 1}),
     ("SYN-LN-2608", "合成样例 · 个人主体 F", "个人", 1,
-     {"无法确定": 0, "疑似命中": 0, "未命中": 1, "命中": 0}),
+     {"无法确定": 0, "严重待核": 0, "疑似命中": 0, "未命中": 1, "命中": 0}),
 ]
+
+BUSINESS_LABELS = ("命中", "疑似命中", "未命中", "无法确定")
+INDICATOR_LABELS = ("命中", "疑似命中", "误报·未命中")
+INDICATOR_RULES = {"命中": "FI-1", "疑似命中": "FI-2", "误报·未命中": "FI-3"}
+REGIONS = ["华东", "华北", "华南", "东北"]
 
 CATEGORIES = ["制裁", "执法", "制裁,执法", "PEP", "不利媒体"]
 DOMAINS = [
@@ -67,6 +80,22 @@ CONCLUSION_REASONS = {
     "未命中": "两侧完整出生日期存在明确冲突，满足授权的排除候选规则；排除依据待复核。",
     "疑似命中": "名称一致且名单事由重大、记录源可追溯；身份关联尚未确认，需人工复核。",
     "无法确定": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；记录源原页可达性未核验，无法做证件级比对，不可据此判为未命中。",
+    "严重待核": "证据不足，无法确定是否命中：命中记录未回传证件号/生日，仅提供 LN 内部记录号；但名单事由等级为重大，且事发地与入网主体地区一致，按最终指标保留为疑似命中待复核。",
+}
+
+INDICATOR_BASIS = {
+    "FI-1": ["硬匹配规则命中：DOCUMENT_EXACT_MATCH / COMPANY_REGISTRATION_MATCH",
+             "业务结论草稿=命中，identity=strong_link", "命中侧有独立身份字段可比"],
+    "FI-2": ["名单事由等级 critical，可引用来源标识 2 条",
+             "名单载明事发地与入网主体地区一致（结构化字段精确匹配）",
+             "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+             "无确认命中证据，保留疑似命中待复核"],
+    "FI-2-report": ["业务结论草稿=疑似命中，report_recommended=True",
+                    "名单事由等级 critical，可引用来源标识 2 条",
+                    "身份关联尚未确认，保留疑似命中待复核"],
+    "FI-3": ["无可引用的重大名单事由（或事发地未形成一致匹配）",
+             "命中侧无可比对独立身份字段（证件号/出生日期/注册号缺失或脱敏）",
+             "仅通知层信息缺失、无特别信息，按误报归集（不放行）"],
 }
 
 STAGES = ["排队", "规则核验", "调查取证", "结论草稿", "已完成"]
@@ -135,19 +164,63 @@ def _reason(conclusion: str, domain: str, ln_id: str) -> str:
             f"命中侧 LN 记录号 {ln_id}（非证件号）。")
 
 
+def _indicator(bucket: str, region: str, domain: str, ln_id: str) -> dict:
+    """Mirror ln_agent.final_indicator.FI-1/2/3 on synthetic demo data."""
+    if bucket == "命中":
+        label, rule, basis_key = "命中", "FI-1", "FI-1"
+    elif bucket == "严重待核":
+        label, rule, basis_key = "疑似命中", "FI-2", "FI-2"
+    elif bucket == "疑似命中":
+        label, rule, basis_key = "疑似命中", "FI-2", "FI-2-report"
+    else:
+        label, rule, basis_key = "误报·未命中", "FI-3", "FI-3"
+    serious = bucket in ("疑似命中", "严重待核")
+    basis = list(INDICATOR_BASIS[basis_key])
+    basis.append(f"记录源主域名 {domain}；命中侧 LN 记录号 {ln_id}（非证件号）")
+    return {
+        "final_indicator": label,
+        "final_indicator_rule": rule,
+        "final_indicator_basis": basis,
+        "final_indicator_status": "DRAFT_NOT_APPROVED",
+        "indicator_does_not_clear_hit": True,
+        "indicator_changes_business_conclusion": False,
+        "severity": "critical" if serious else "medium",
+        "event_region": region if serious else "未知",
+        "subject_region": region,
+        "location_consistent": serious,
+        "identity_fields_available": bucket == "命中",
+    }
+
+
 def build() -> dict:
     cases = []
     for ci, (cid, subject, entity, count, mix) in enumerate(CASES):
         labels = [c for c, n in mix.items() for _ in range(n)]
+        # Spread the rare outcomes across the checklist so the first 25 rows
+        # already show a mix of final indicators instead of 25 identical rows.
+        major = [c for c in labels if c == "无法确定"]
+        rare = [c for c in labels if c != "无法确定"]
+        spread: list[str] = []
+        for i, bucket in enumerate(major):
+            spread.append(bucket)
+            if rare and (i + 1) % 7 == 0:
+                spread.append(rare.pop(0))
+        spread.extend(rare)
+        labels = spread
         assert len(labels) == count, (cid, len(labels), count)
         hits = []
         for i in range(count):
             n = i + 1
-            conclusion = labels[i]
+            bucket = labels[i]
+            # 严重待核 still has NO business conclusion; only the derived
+            # final indicator changes (FI-2). Keep the two axes separate.
+            conclusion = "无法确定" if bucket == "严重待核" else bucket
             domain = DOMAINS[(ci * 3 + i) % len(DOMAINS)]
             category = CATEGORIES[(ci * 5 + i * 3) % len(CATEGORIES)]
             score = 100 if i % 17 else 99
             ln_id = f"7{ci}{i:03d}0{n:02d}"
+            region = REGIONS[(ci + i) % len(REGIONS)]
+            indicator = _indicator(bucket, region, domain, ln_id)
             if entity == "企业":
                 name = f"Synthetic {COMPANY_WORDS[i % len(COMPANY_WORDS)]} " \
                        f"Trading {ci + 1:02d}-{n:02d} Co., Ltd."
@@ -173,13 +246,21 @@ def build() -> dict:
                 "conclusion": conclusion,
                 "conclusion_status": "DRAFT_NOT_APPROVED" if conclusion != "无法确定" else "NO_CONCLUSION",
                 "duration_ms": duration,
-                "reason": _reason(conclusion, domain, ln_id),
+                "reason": _reason(bucket, domain, ln_id),
                 "stages": STAGES,
                 "stage_ms": [round(duration * w, 1) for w in STAGE_WEIGHTS],
                 "path": path,
                 "source_count": 3 + (i % 8),
+                **indicator,
             })
-        dist = {c: mix[c] for c in ("命中", "疑似命中", "未命中", "无法确定") if mix[c]}
+        dist = {c: sum(1 for h in hits if h["conclusion"] == c) for c in BUSINESS_LABELS}
+        dist = {c: v for c, v in dist.items() if v}
+        ind_dist = {c: sum(1 for h in hits if h["final_indicator"] == c)
+                    for c in INDICATOR_LABELS}
+        case_indicator = max((c for c in INDICATOR_LABELS if ind_dist[c]),
+                             key=lambda c: {"误报·未命中": 1, "疑似命中": 2, "命中": 3}[c],
+                             default="误报·未命中")
+        escalation = ind_dist["命中"] + ind_dist["疑似命中"]
         # engine_ms is the SUM of this case's per-hit work (no parallelism yet).
         # wall_ms is that same case after its own 4 workers split the hits.
         # The two must never be divided by each other a second time.
@@ -196,21 +277,43 @@ def build() -> dict:
             "speedup": round(engine_ms / wall_ms, 2) if wall_ms else 1.0,
             "mean_ms_per_hit": round(engine_ms / count, 1),
             "conclusion_distribution": dist,
+            "final_indicator": case_indicator,
+            "final_indicator_distribution": ind_dist,
+            "escalation_hits": escalation,
+            "escalation_rate": round(escalation / count, 4) if count else 0.0,
             "profile": _profile(ci, entity, subject),
             "hits": hits,
         })
     total_hits = sum(c["hit_count"] for c in cases)
     dist = {k: sum(c["conclusion_distribution"].get(k, 0) for c in cases)
-            for k in ("命中", "疑似命中", "未命中", "无法确定")}
+            for k in BUSINESS_LABELS}
+    ind_total = {k: sum(c["final_indicator_distribution"][k] for c in cases)
+                 for k in INDICATOR_LABELS}
+    escalation_total = ind_total["命中"] + ind_total["疑似命中"]
     engine_total = round(sum(c["engine_ms"] for c in cases), 1)
     wall_serial = round(sum(c["wall_ms"] for c in cases), 1)
     wall_together = max(c["wall_ms"] for c in cases)
     wall_shared = round(engine_total / 4, 1)
     return {
-        "schema": "ln-agent-demo-workbench/1.1",
+        "schema": "ln-agent-demo-workbench/1.2",
         "disclaimer": "SYNTHETIC ONLY — 所有工单号、主体、命中记录、域名与说明均为虚构；仅复现授权本地验证的运行形态与量级，不含任何真实业务数据。",
         "generated_by": "scripts/build_demo.py",
-        "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织。并发模型：8 个工单主体同时开始、互不干扰，每个主体内部再由 4 个 worker 并行处理自己的命中；静态版无需 Python 后端。",
+        "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织。每条命中同时展示『业务结论草稿』与『最终指标』两个轴；最终指标是派生统计口径，不改变业务结论、不自动放行。并发模型：8 个工单主体同时开始、互不干扰，每个主体内部再由 4 个 worker 并行处理自己的命中；静态版无需 Python 后端。",
+        "final_indicator": {
+            "name": "最终指标",
+            "kind": "TRIAGE_METRIC",
+            "labels": list(INDICATOR_LABELS),
+            "rules": {
+                "FI-1": "命中：证件号 / 企业注册号 / 出生日期硬匹配，或业务结论草稿已确认命中（strong_link）。",
+                "FI-2": "疑似命中：名单事由重大（high/critical 且有来源标识）且事发地与主体/记录所在地一致；或已有上报草稿、政策要求升级、来源冲突/工具阻断（这些不得归入误报）。",
+                "FI-3": "误报·未命中：无特别信息——例如命中侧根本拿不到只有通知里才有的身份信息，且无重大事由或事发地不一致。按误报归集，仅作复核优先级与统计口径。",
+            },
+            "boundary": "最终指标是 Rule Engine → PolicyGuard → Decision Router → Disposition 之后的下游派生指标；不改变业务结论、不改写 business_conclusion / recommendation / route，不自动放行、清除命中、发送报告，也不因信息不足创建人工调查任务。工具阻断与来源冲突一律保留为疑似命中。",
+            "metric": "需人工复核率 =（命中 + 疑似命中）/ 全部命中记录",
+            "escalation_hits": escalation_total,
+            "escalation_rate": round(escalation_total / total_hits, 4),
+            "distribution": ind_total,
+        },
         "concurrency": {
             "model": "m 个工单主体同时开始，每个主体内部 4 workers 按命中并行",
             "cases_start_together": True,
@@ -242,6 +345,9 @@ def build() -> dict:
             "mean_wall_ms_per_hit": round(wall_serial / total_hits, 1),
             "total_workers_if_isolated": 4 * len(cases),
             "conclusion_distribution": dist,
+            "final_indicator_distribution": ind_total,
+            "escalation_hits": escalation_total,
+            "escalation_rate": round(escalation_total / total_hits, 4),
             "largest_case_hits": max(c["hit_count"] for c in cases),
         },
         "cases": cases,
@@ -257,6 +363,17 @@ def _assert_synthetic(payload: dict) -> None:
         raise RuntimeError("refusing to publish demo: document-sized number")
     if payload["totals"]["hits"] != 154 or payload["totals"]["cases"] != 8:
         raise RuntimeError("demo shape drifted from the validated run")
+    ind = payload["totals"]["final_indicator_distribution"]
+    if sum(ind.values()) != payload["totals"]["hits"]:
+        raise RuntimeError("final indicator distribution does not sum to hit count")
+    for case in payload["cases"]:
+        if sum(case["final_indicator_distribution"].values()) != case["hit_count"]:
+            raise RuntimeError("case-level final indicator distribution drifted")
+        for hit in case["hits"]:
+            if hit["final_indicator"] not in payload["final_indicator"]["labels"]:
+                raise RuntimeError("unknown final indicator label")
+            if not hit["indicator_does_not_clear_hit"]:
+                raise RuntimeError("final indicator must never clear a hit")
 
 
 INDEX_HTML = """<!DOCTYPE html>
@@ -297,13 +414,14 @@ h1{font-size:24px;margin:0 0 7px;letter-spacing:-.3px}
 .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
 .btn.primary:hover{opacity:.9;color:#fff}
 .btn:disabled{opacity:.55;cursor:default}
-.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:16px 0}
 .kpi{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:13px 15px;box-shadow:var(--shadow)}
 .kpi b{display:block;font-size:23px;letter-spacing:-.5px;line-height:1.25}
 .kpi span{color:var(--muted);font-size:12px}
 .stack{display:flex;height:7px;border-radius:99px;overflow:hidden;background:var(--border);margin:9px 0 7px}
 .stack i{display:block;height:100%}
 .c-hit{background:var(--hit)}.c-susp{background:var(--susp)}.c-clear{background:var(--clear)}.c-unk{background:var(--unk)}
+.fi-hit{background:var(--hit)}.fi-susp{background:var(--susp)}.fi-fp{background:var(--clear)}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
 .legend b{font-weight:600;color:var(--text)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
@@ -325,6 +443,24 @@ h1{font-size:24px;margin:0 0 7px;letter-spacing:-.3px}
 .p-susp{background:rgba(217,133,20,.13);color:var(--susp);border-color:transparent}
 .p-clear{background:rgba(23,122,85,.11);color:var(--clear);border-color:transparent}
 .p-unk{background:rgba(123,135,152,.13);color:var(--unk);border-color:transparent}
+.p-fi-hit{background:rgba(217,59,59,.12);color:var(--hit);border-color:transparent;font-weight:700}
+.p-fi-susp{background:rgba(217,133,20,.15);color:var(--susp);border-color:transparent;font-weight:700}
+.p-fi-fp{background:rgba(23,122,85,.13);color:var(--clear);border-color:transparent;font-weight:700}
+.final-panel{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--susp);border-radius:12px;padding:15px 17px;margin:0 0 18px;box-shadow:var(--shadow)}
+.final-panel h2{font-size:15px;margin:0 0 4px}
+.final-panel .lead{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+.fi-top{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;align-items:center}
+.fi-metric{background:var(--accent2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center}
+.fi-metric b{display:block;font-size:27px;line-height:1.2;color:var(--accent);letter-spacing:-.6px}
+.fi-metric span{font-size:11.5px;color:var(--muted)}
+.fi-rules{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.fi-rules div{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:11.8px;color:var(--muted);line-height:1.55}
+.fi-rules b{display:block;color:var(--text);font-size:12.3px;margin-bottom:3px}
+.fi-bound{font-size:11.5px;color:var(--muted);margin-top:11px;border-top:1px dashed var(--border);padding-top:9px}
+.ind-line{font-size:11.5px;color:var(--muted);margin-top:6px}
+.ind-line b{color:var(--text)}
+.hit .basis{margin-top:8px;font-size:11.8px;color:var(--muted);line-height:1.6}
+.hit .basis i{font-style:normal;display:inline-block;background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:2px 6px;margin:2px 4px 0 0}
 .chip{font-size:11px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;color:var(--muted)}
 .detail{display:none}
 .detail.on{display:block}
@@ -385,8 +521,8 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
 <header class="top">
   <div>
     <h1>LN 筛查 Agent · 核验工作台 Demo</h1>
-    <p class="sub">按<strong>工单主体</strong>组织：每张卡片是一张核查单，点进去看这条工单里<strong>每一条命中的处理进度与最终业务结论</strong>。<strong>8 个工单主体同时开始、互不干扰</strong>，每个主体内部再由 4 个 worker 并行处理自己的命中；点「运行一遍 Demo」可看这一层并发，也可用 <code>?autorun=1</code> 打开即自动运行。本页为静态单文件，无需后端、无需登录、全部为合成数据。</p>
-    <div class="badges"><span class="badge">8 个主体同时开跑</span><span class="badge">154 条命中</span><span class="badge">每单 4 workers · 共 32 并发</span><span class="badge">含企查查主体画像</span><span class="badge g">零外部请求</span><span class="badge">全部合成数据</span></div>
+    <p class="sub">按<strong>工单主体</strong>组织：每张卡片是一张核查单，点进去看这条工单里<strong>每一条命中的处理进度、业务结论草稿与最终指标</strong>。<strong>最终指标</strong>把「无结论」按规则归到 <b>命中 / 疑似命中 / 误报·未命中</b>，并给出全批唯一的汇总指标。<strong>8 个工单主体同时开始、互不干扰</strong>，每个主体内部再由 4 个 worker 并行处理自己的命中；点「运行一遍 Demo」可看这一层并发，也可用 <code>?autorun=1</code> 打开即自动运行。本页为静态单文件，无需后端、无需登录、全部为合成数据。</p>
+    <div class="badges"><span class="badge">8 个主体同时开跑</span><span class="badge">154 条命中</span><span class="badge">每单 4 workers · 共 32 并发</span><span class="badge">含最终指标与企查查主体画像</span><span class="badge g">零外部请求</span><span class="badge">全部合成数据</span></div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn primary" id="runall">▶ 运行一遍 Demo</button>
@@ -398,6 +534,7 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
 
 <div id="home" class="home">
   <div class="kpis" id="kpis"></div>
+  <div class="final-panel" id="finalPanel"></div>
   <div class="section-title">工单主体总览 <small>点击任一工单查看逐条命中 · 大批量命中单（88 / 49 条）同样在此</small></div>
   <div class="cases" id="cases"></div>
   <div class="notice" id="scaleNote"></div>
@@ -435,14 +572,18 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
  const COLORS={"命中":"c-hit","疑似命中":"c-susp","未命中":"c-clear","无法确定":"c-unk"};
  const PILL={"命中":"p-hit","疑似命中":"p-susp","未命中":"p-clear","无法确定":"p-unk"};
  const ORDER=["命中","疑似命中","未命中","无法确定"];
+ const IND_ORDER=["命中","疑似命中","误报·未命中"];
+ const IND_COLORS={"命中":"fi-hit","疑似命中":"fi-susp","误报·未命中":"fi-fp"};
+ const IND_PILL={"命中":"p-fi-hit","疑似命中":"p-fi-susp","误报·未命中":"p-fi-fp"};
+ const IND_CLASS={"命中":"c-hit","疑似命中":"c-susp","误报·未命中":"c-clear"};
  let current=null, filter="全部", query="", shown=25, running=false, timers=[];
 
  function stack(dist){
-   const total=Object.values(dist).reduce((a,b)=>a+b,0)||1;
-   return `<div class="stack">${ORDER.filter(k=>dist[k]).map(k=>`<i class="${COLORS[k]}" style="width:${dist[k]/total*100}%"></i>`).join("")}</div>`;
+   const total=IND_ORDER.reduce((a,k)=>a+(dist[k]||0),0)||1;
+   return `<div class="stack">${IND_ORDER.filter(k=>dist[k]).map(k=>`<i class="${IND_COLORS[k]}" style="width:${dist[k]/total*100}%"></i>`).join("")}</div>`;
  }
  function legend(dist){
-   return `<div class="legend">${ORDER.filter(k=>dist[k]).map(k=>`<span><i class="dot ${COLORS[k]}"></i><b>${dist[k]}</b> ${k}</span>`).join("")}</div>`;
+   return `<div class="legend">${IND_ORDER.filter(k=>dist[k]).map(k=>`<span><i class="dot ${IND_COLORS[k]}"></i><b>${dist[k]}</b> ${k}</span>`).join("")}</div>`;
  }
  function renderKpis(){
    const t=D.totals, cc=D.concurrency;
@@ -450,8 +591,22 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
      [t.cases,"工单主体（同时开跑）"],[t.hits,"命中记录"],
      [t.mean_ms_per_hit.toFixed(0)+" ms","单条命中实际耗时"],
      [(t.wall_ms/1000).toFixed(1)+" s","8 主体同时开跑 · 总墙钟"],
-     [t.total_workers_if_isolated,"总并发 workers"]
+     [t.total_workers_if_isolated,"总并发 workers"],
+     [(t.escalation_rate*100).toFixed(1)+"%","最终指标 · 需人工复核率"]
    ].map(([v,k])=>`<div class="kpi"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
+   const F=D.final_indicator, id=t.final_indicator_distribution;
+   $("finalPanel").innerHTML=`<h2>最终指标 · 全批唯一汇总</h2>
+     <p class="lead">每条命中都会得到一个明确的最终指标，不再停留在「无结论」。${esc(F.metric)}；本批 <b>${t.escalation_hits}</b> 条需要人工复核，占 <b>${(t.escalation_rate*100).toFixed(1)}%</b>。</p>
+     <div class="fi-top">
+       <div class="fi-metric"><b>${(t.escalation_rate*100).toFixed(1)}%</b><span>需人工复核率<br>${t.escalation_hits} / ${t.hits} 条</span></div>
+       <div>${stack(id)}${legend(id)}<div class="ind-line">业务结论草稿仍单独保留：${ORDER.filter(k=>t.conclusion_distribution[k]).map(k=>`<b>${t.conclusion_distribution[k]}</b> ${esc(k)}`).join(" · ")}</div></div>
+     </div>
+     <div class="fi-rules">
+       <div><b>FI-1 命中</b>${esc(F.rules["FI-1"])}</div>
+       <div><b>FI-2 疑似命中</b>${esc(F.rules["FI-2"])}</div>
+       <div><b>FI-3 误报·未命中</b>${esc(F.rules["FI-3"])}</div>
+     </div>
+     <div class="fi-bound">${esc(F.boundary)}</div>`;
    const big=D.cases.reduce((a,b)=>a.hit_count>b.hit_count?a:b);
    $("scaleNote").innerHTML=`<strong>并发模型：m 个工单主体一起干、互不干扰。</strong>
      8 个主体<b>同时开始</b>，每个主体内部把命中切给 <b>4 个 worker</b>（共 ${t.total_workers_if_isolated} 并发），
@@ -476,8 +631,9 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
        <div class="cid">${esc(c.case_id)} <span class="chip">${esc(c.entity_type)}</span> <span class="chip">含主体画像</span></div>
        <div class="subject">${esc(c.subject)}</div>
        <div class="big">${c.hit_count}<em>条命中</em></div>
-       ${stack(c.conclusion_distribution)}
-       ${legend(c.conclusion_distribution)}
+       ${stack(c.final_indicator_distribution)}
+       ${legend(c.final_indicator_distribution)}
+       <div class="ind-line">工单最终指标 <span class="pill ${IND_PILL[c.final_indicator]}">${esc(c.final_indicator)}</span> · 需复核 ${c.escalation_hits} 条（${(c.escalation_rate*100).toFixed(1)}%）</div>
        <div class="row"><span>本单墙钟 ${c.wall_ms.toFixed(0)} ms</span><span>单条 ${c.mean_ms_per_hit.toFixed(0)} ms · ${c.speedup.toFixed(1)}x</span></div>
        <div class="foot"><span class="pill p-clear">已完成 · 结论草稿</span><span class="go">点进去查看 →</span></div>
        <div class="progress"></div>
@@ -501,14 +657,15 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
        <div><b>${c.engine_ms.toFixed(0)} ms</b><span>单条耗时之和（未并行）</span></div>
        <div><b>${c.wall_ms.toFixed(0)} ms</b><span>本单 4 workers 墙钟</span></div>
        <div><b>${c.mean_ms_per_hit.toFixed(0)} ms</b><span>单条命中实际耗时</span></div>
-     </div>${stack(c.conclusion_distribution)}${legend(c.conclusion_distribution)}`;
+     </div>${stack(c.final_indicator_distribution)}${legend(c.final_indicator_distribution)}
+     <div class="ind-line">工单最终指标 <span class="pill ${IND_PILL[c.final_indicator]}">${esc(c.final_indicator)}</span> · 需人工复核 <b>${c.escalation_hits}</b> / ${c.hit_count} 条（${(c.escalation_rate*100).toFixed(1)}%）· 业务结论草稿：${ORDER.filter(k=>c.conclusion_distribution[k]).map(k=>`<b>${c.conclusion_distribution[k]}</b> ${esc(k)}`).join(" · ")}</div>`;
    const p=c.profile;
    $("profile").innerHTML=`<h3>主体画像 · ${esc(c.entity_type)}主体
        <span class="pill p-clear">${esc(p.connector)} · 字段结构</span></h3>
      <div class="src">${esc(p.note)}　连接器工具：${p.tools.map(esc).join(" / ")}</div>
      <div class="fields">${p.display.map(f=>`<div><span>${esc(f.label)}</span><b>${esc(f.value)}</b></div>`).join("")}</div>
      <div class="scan"><b>${esc(p.risk_scan.label)}</b>：共 ${p.risk_scan.dimensions} 项维度，${p.risk_scan.zero_hit} 项 0 命中${p.risk_scan.nonzero.length?"；有记录："+p.risk_scan.nonzero.map(x=>esc(x.name)+" "+x.count+" 条").join("、"):"；全部维度 0 命中"}。<b>0 命中仅代表结构化维度当前无记录，不等于主体无风险</b>（连接器口径，须并行核对舆情）。</div>`;
-   $("filter").innerHTML=["全部",...ORDER].map(k=>`<button data-k="${k}" class="${k==="全部"?"on":""}">${k}</button>`).join("");
+   $("filter").innerHTML=["全部",...IND_ORDER].map(k=>`<button data-k="${k}" class="${k==="全部"?"on":""}">按最终指标：${k}</button>`).join("");
    $("search").value="";
    renderHits(true);
  }
@@ -522,8 +679,8 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
  $("more").onclick=()=>{shown+=25;renderHits(false);};
 
  function visibleHits(){
-   return current.hits.filter(h=>(filter==="全部"||h.conclusion===filter)&&
-     (!query||(h.name+" "+h.source_domain+" "+h.hit_id).toLowerCase().includes(query)));
+   return current.hits.filter(h=>(filter==="全部"||h.final_indicator===filter)&&
+     (!query||(h.name+" "+h.source_domain+" "+h.hit_id+" "+h.conclusion+" "+h.final_indicator).toLowerCase().includes(query)));
  }
  function renderHits(reset){
    if(reset) $("hits").innerHTML="";
@@ -540,7 +697,8 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
          <span class="nm">${esc(h.name)}</span>
          <span class="chip">${esc(h.category)}</span>
          <span class="chip">分数 ${h.ln_score}</span>
-         <span class="pill ${PILL[h.conclusion]}">${esc(h.conclusion)}</span>
+         <span class="chip">业务结论 ${esc(h.conclusion)}</span>
+         <span class="pill ${IND_PILL[h.final_indicator]}">最终指标 ${esc(h.final_indicator)}</span>
        </div>
        <div class="r2">
          <div><div class="steps">${h.stages.map(()=>"<i></i>").join("")}</div>
@@ -548,8 +706,12 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
          <span class="phase">${esc(h.source_domain)}</span>
          <span class="ms" title="这条命中自己的引擎耗时，不是整批完成时间">${h.duration_ms.toFixed(1)} ms</span>
        </div>
-       <div class="reason"><b>核查说明：</b>${esc(h.reason)}<br>
-         <b>来源：</b>${esc(h.source_domain)} 等 ${h.source_count} 条记录源 · LN 记录号 ${esc(h.ln_id)} · ${esc(h.conclusion_status)}
+       <div class="reason">
+         <b>最终指标：</b>${esc(h.final_indicator)}（${esc(h.final_indicator_rule)}）· ${esc(h.final_indicator_status)} · 派生统计口径，不改变业务结论、不自动放行或清除命中<br>
+         <b>指标依据：</b><div class="basis">${h.final_indicator_basis.map(x=>`<i>${esc(x)}</i>`).join("")}</div>
+         <b>业务结论草稿：</b>${esc(h.conclusion)}（${esc(h.conclusion_status)}）· 名单事由等级 ${esc(h.severity)} · 事发地 ${esc(h.event_region)} / 主体 ${esc(h.subject_region)} · 事发地一致：${h.location_consistent?"是":"否"}<br>
+         <b>核查说明：</b>${esc(h.reason)}<br>
+         <b>来源：</b>${esc(h.source_domain)} 等 ${h.source_count} 条记录源 · LN 记录号 ${esc(h.ln_id)}
          <div class="path">${h.path.map(p=>`<i>${esc(p)}</i>`).join("")}</div></div>
      </div>`).join("");
    [...$("hits").querySelectorAll(".steps")].forEach(el=>el.querySelectorAll("i").forEach(i=>i.classList.add("on")));

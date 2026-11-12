@@ -39,7 +39,7 @@
       "captured_at": "2026-11-11T00:00:00+08:00",
       "source_url": "synthetic://boss-detail/SYN-WB-CAPTURE-001 (display only, never fetched)",
       "facts": [
-        {"side": "hit", "field": "registration_number", "value": "91310000SYNTH00017", "evidence_id": "SYN-WB-CAPTURE-001:H3:ln:reg", "origin": "ln_structured", "checked": true, "context": "COMPANY_REGISTRY", "source_url": "synthetic://registry/H3"}
+        {"side": "hit", "field": "registration_number", "value": "SYNTH-USCC-00017", "evidence_id": "SYN-WB-CAPTURE-001:H3:ln:reg", "origin": "ln_structured", "checked": true, "context": "COMPANY_REGISTRY", "source_url": "synthetic://registry/H3"}
       ]
     },
     "model:SYN-WB-CAPTURE-001:H3": {

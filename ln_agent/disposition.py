@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 import re
 from .evidence import norm
+from .final_indicator import derive_final_indicator
 from .models import Case, Subject, Hit, EvidenceResult
 from .policy import Policy
 from .risk_categories import risk_categories, any_category
@@ -89,7 +90,10 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
                       evidence_refs: list[str],
                       hit_facts: list | None = None) -> dict:
     """Generate concise drafts from existing deterministic findings only."""
-    matches, differences = _identity_signals(subject, hit, evidence, hit_facts)
+    # Include facts acquired during bounded research; using only hit.facts would
+    # hide a DOB conflict discovered by an authorized source adapter.
+    current_facts = hit.facts if hit_facts is None else hit_facts
+    matches, differences = _identity_signals(subject, hit, evidence, current_facts)
     risk_summary, severity, event_refs = _risk_event(hit)
     # Preserve all provider labels; they are not themselves the legal source's regime.
     risk_type = "/".join(dict.fromkeys(CATEGORY_CN.get(c, c) for c in risk_categories(hit.category)))
@@ -133,6 +137,16 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
         business_conclusion = "疑似命中"
     else:
         business_conclusion = None
+
+    # v0.9.6: the final indicator is a DERIVED TRIAGE METRIC. It is computed
+    # strictly after the disposition above and cannot change any of its fields.
+    # It resolves the business-facing "无结论" bucket into an explicit review
+    # priority: 命中 / 疑似命中 / 误报·未命中, without clearing or reporting.
+    indicator = derive_final_indicator(
+        subject=subject, hit=hit, evidence=evidence, identity=identity,
+        route=route, recommendation=recommendation, policy=policy, gate=gate,
+        business_conclusion=business_conclusion, report_recommended=report,
+        hit_facts=current_facts)
 
     anchor_refs = list(dict.fromkeys([x for x in evidence_refs if x] + event_refs))
     parts = matches[:3] + differences[:2]
@@ -206,4 +220,5 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
         "source_refs": anchor_refs,
         "attribution": "LN风险事由来自输入的来源标识；尚未独立核实" if risk_summary else "未提供可引用的风险事由来源",
         "policy_status": "候选上报规则未经公司批准；不自动发送、放行或关闭 LN 工单",
+        **indicator,
     }

@@ -131,6 +131,9 @@ def _hit_summaries(report: dict, events: list[dict]) -> list[dict]:
             "stop_reason": r["stop_reason"],
             "business_conclusion": disp["business_conclusion"],
             "business_conclusion_status": disp["business_conclusion_status"],
+            "final_indicator": disp["final_indicator"],
+            "final_indicator_rule": disp["final_indicator_rule"],
+            "final_indicator_basis": disp["final_indicator_basis"],
             "conclusion_source": disp["conclusion_source"],
             "recommendation": disp["recommendation"],
             "internal_note": disp["internal_note"],
@@ -514,7 +517,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
     `<div class="hitcard ${h.hit_id===selected?"sel":""}" data-h="${esc(h.hit_id)}">
       <div class="row1"><span class="hid">${esc(h.hit_id)} <span class="meta">${esc(h.entity_type)} · ${esc(h.category)}</span></span>
       <span class="chip ${chip(h.business_conclusion)}">${esc(h.business_conclusion||"无结论")}</span></div>
-      <div class="meta">路由 ${esc(h.route)} · ${esc(h.business_conclusion_status)} · 耗时 ${ms(h.duration_ms)}</div>
+      <div class="meta">路由 ${esc(h.route)} · ${esc(h.business_conclusion_status)} · 最终指标 ${esc(h.final_indicator)} (${esc(h.final_indicator_rule)}) · 耗时 ${ms(h.duration_ms)}</div>
       <p class="note">${esc(h.internal_note||"证据不足，未形成业务结论。")}</p>
       <div class="path">${h.execution_path.slice(0,8).map(p=>`<i>${esc(p.action)}</i>`).join("")}</div>
     </div>`).join("");
@@ -534,12 +537,14 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
     $("selbody").innerHTML = `
       <div class="kv">
         <span>结论 <b>${esc(h.business_conclusion||"无结论")}</b></span>
+        <span>最终指标 <b>${esc(h.final_indicator)}</b> (${esc(h.final_indicator_rule)})</span>
         <span>建议 <b>${esc(h.recommendation)}</b></span>
         <span>停止原因 <b>${esc(h.stop_reason)}</b></span>
         <span>上报草稿 <b>${h.report_recommended?"是":"否"}</b></span>
         <span>人工队列 <b>${h.manual_queue_required?"是":"否"}</b></span>
         <span>自动发送 <b>${h.automatically_sent?"是":"否"}</b></span>
       </div>
+      <p class="note"><b>最终指标依据</b>：${(h.final_indicator_basis||[]).map(esc).join("；")}（派生统计口径，不改变业务结论、不自动放行）</p>
       <p class="note"><b>执行路径</b></p>
       <div class="path">${h.execution_path.map((p,i)=>`<i>${i+1}. ${esc(p.action)}${p.tool?" · "+esc(p.tool):""}${p.key?" · "+esc(p.key):""}</i>`).join("")}</div>
       <p class="note" style="margin-top:12px"><b>Skill 契约</b>：${h.skills.map(esc).join(" · ")}</p>

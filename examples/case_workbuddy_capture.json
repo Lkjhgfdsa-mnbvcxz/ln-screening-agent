@@ -21,7 +21,7 @@
       "role": "applicant",
       "facts": [
         {"side": "applicant", "field": "company_name", "value": "Synthetic Horizon Trading Co., LTD", "evidence_id": "SYN-WB-CAPTURE-001:app:company", "origin": "kyb_verified", "checked": true},
-        {"side": "applicant", "field": "registration_number", "value": "91310000SYNTH00017", "evidence_id": "SYN-WB-CAPTURE-001:app:reg", "origin": "kyb_verified", "checked": true, "context": "COMPANY_REGISTRY"}
+        {"side": "applicant", "field": "registration_number", "value": "SYNTH-USCC-00017", "evidence_id": "SYN-WB-CAPTURE-001:app:reg", "origin": "kyb_verified", "checked": true, "context": "COMPANY_REGISTRY"}
       ]
     }
   ],

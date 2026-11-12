@@ -69,6 +69,11 @@ report = Orchestrator(authorized_policy(), FixtureResearchTool({}),
 ```bash
 python3 run.py inspect                       # 8 Skills / 12 Tool 描述
 python3 run.py web                           # 选择「WorkBuddy 本地采集 · 合成回放」
-python3 scripts/build_replay.py --tests 203  # 重新生成静态回放
-python3 -m unittest discover -s tests -v    # 203 项，含 16 项接入与绕过防护回归测试
+python3 scripts/build_replay.py --tests 242  # 重新生成静态回放
+python3 scripts/check_sensitive.py           # 全仓 + 全历史发布闸门
+python3 -m unittest discover -s tests -v    # 242 项，含 16 项接入与绕过防护回归测试
 ```
+
+## v0.9.6 补充：最终指标不在这条判定链上
+
+`final_indicator` 是在 `build_disposition()` 完成业务结论之后才派生的**下游统计指标**，不调用任何 adapter、不产生 `Fact`、不经过 `validate_facts()`，也不改变 `recommendation` / `business_conclusion` / `report`。因此它既不会绕过上述五道防护，也不能被模型用来编造审核依据。规则、围栏与「基于项目 + 修复项目缺陷」的清单见 [`FINAL_INDICATOR.md`](FINAL_INDICATOR.md)。

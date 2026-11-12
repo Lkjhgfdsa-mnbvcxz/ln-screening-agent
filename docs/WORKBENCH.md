@@ -54,16 +54,30 @@ python3 run.py web --port 8766 # 自定义端口
 - 工作台：本地起服务、实际并行跑案例、事件边产生边推送。
 - 静态回放：事件已录制、单文件离线播放、只含合成数据，供公开演示与评审查看。
 
-两者共用同一套事件字段与业务结论结构。用 `python3 scripts/build_replay.py --tests 219` 重新生成回放；生成器只读取 `examples/` 下的合成输入，绝不读取授权环境里的真实采集包。
+两者共用同一套事件字段与业务结论结构。用 `python3 scripts/build_replay.py --tests 242` 重新生成回放；生成器只读取 `examples/` 下的合成输入，绝不读取授权环境里的真实采集包。
 
 ## 公开的工单级 Demo（V0.9.4）
 
 `demo.html` 补上了实时工作台**上面缺的那一层**：首页是 8 个工单主体卡片（每张核查单一个主体），点进去是这张单里每条命中的进度、最终业务结论和该条自己的核查说明；不需要 Python 后端、不需要登录，外部评审打开 <https://lkjhgfdsa-mnbvcxz.github.io/ln-screening-agent/demo.html> 即可查看，`?autorun=1` 打开即自动演示 4 workers 并行推进，`#SYN-LN-2602` 可直接深链到 88 条命中的大单。
 
-- 数据：`examples/demo_workbench_data.json`，由 `python3 scripts/build_demo.py` 生成；同一脚本同时生成 `index.html`（Pages 首页入口）。**全部为合成值**，只复现授权本地验证的 8 单 / 154 命中 / 4 workers / 单条约 107 ms 的量级。
+- 数据：`examples/demo_workbench_data.json`，由 `python3 scripts/build_demo.py` 生成；同一脚本同时生成 `index.html`（Pages 首页入口）。**全部为合成值**，只复现授权本地验证的 8 单 / 154 命中 / 4 workers / 单条实际约 395 ms 的量级（并行后摊到每条约 103 ms）。
 - 层级：`工单主体 → 逐条命中 → 单条核查说明与执行路径`。详情页默认渲染 25 条，可继续加载；大批量命中不折叠成一条时间线。
 - 主体画像：字段结构来自 WorkBuddy 企查查连接器（`get_company_profile` / `get_company_risk_scan` / `get_executive_risk_scan`），企业 35 项、个人 18 项风险因子。取值全部合成，页面明确标注**未发起实时查询**；连接器本次实时调用因积分不足返回 402，项目内 `tools/qcc/` 仍是 `not_connected`。页面保留连接器口径：**0 命中仅代表结构化维度当前无记录，不等于主体无风险**，须并行核对舆情。
 - 耗时口径（v0.9.5 更正）：`Orchestrator.stats.elapsed_ms` 是**整单经 4 workers 并行后的墙钟**，不是各命中耗时之和；单条真实工作量取自 `HIT_FINISHED.duration_ms`（事件顶层字段）。授权实测单条约 394.863 ms，49 / 88 条大单加速比 3.93x / 3.97x，8 张工单是**逐单**运行、累计墙钟 15,922.158 ms；`103.391 ms/命中` 只是 `15922.158 / 154` 的并行摊薄份额。
 - 三种墙钟必须分开：**逐单串行** ≈ 15.9 s（实测）、**8 个主体同时开跑且每单各 4 workers** ≈ 9.3 s（总墙钟 = 最慢的单，需 32 并发）、**全局共享 1 个 4-worker 池** ≈ 15.2 s。不能把并行墙钟再除以 4，也不能把摊薄份额当作单条耗时。Demo 动画让 8 张卡片在 t=0 同时开始、按各自墙钟比例完成，命中阶段按 4 条一组推进。
 - 与实时工作台的区别：Demo 是已录制形态的静态页，可公开、可离线；真实并行执行与 SSE 事件仍只在 `python3 run.py web` 的本地进程里发生。两者业务结论字段一致，但 Demo 不冒充实时运行。
 - 发布闸门：`scripts/build_demo.py::_assert_synthetic()` 与 `tests/test_public_demo.py` 检查真实数据标记、15~18 位证件号、外部资源、8/154 形态、画像口径、耗时算术与首页入口归属。
+
+## 最终指标（V0.9.6）
+
+实时工作台与 JSON 现在同时输出两个**独立轴**，不要混为一谈：
+
+| 轴 | 取值 | 用途 |
+|---|---|---|
+| `business_conclusion`（业务结论草稿） | 未命中 / 疑似命中 / 命中 / 留空 | 审核判断，全部 `DRAFT_NOT_APPROVED`；证据不足时保持留空 |
+| `final_indicator`（最终指标） | 命中 / 疑似命中 / 误报·未命中 | 派生统计口径与复核优先级；**不改变业务结论、不自动放行、不清除命中** |
+
+- 工作台命中列表在业务结论下面多一行「最终指标：…」；详情区在业务结论面板下方单独渲染最终指标、`FI-1/2/3` 规则 id 与逐条依据（`.final-indicator` 面板，视觉上与业务结论区分）。
+- `replay.html` 的命中卡片与选中详情也显示最终指标、规则 id 与依据。
+- 公开 Demo 首页新增「最终指标 · 全批唯一汇总」面板：三条规则、三标签分布、以及全批唯一的**需人工复核率 11.0%（17 / 154）**；每条命中可按最终指标筛选。
+- 规则与边界详见 [`FINAL_INDICATOR.md`](FINAL_INDICATOR.md)。推送前另跑 `python3 scripts/check_sensitive.py` 全仓 + 全历史脱敏闸门。

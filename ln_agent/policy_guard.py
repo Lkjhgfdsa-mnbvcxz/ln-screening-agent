@@ -156,6 +156,30 @@ class PolicyGuard:
             raise PolicyViolation("unverified confirmed-hit conclusion")
         if business == "疑似命中" and not disposition.get("report_recommended"):
             raise PolicyViolation("suspected hit requires supported report recommendation")
+        # v0.9.6 derived triage metric: downstream only, never a new disposition.
+        metric = skill.get("derived_metric", {})
+        indicator = disposition.get("final_indicator")
+        if indicator not in metric.get("allowed_labels", []):
+            raise PolicyViolation("final indicator must be one of the approved triage labels")
+        if disposition.get("final_indicator_rule") not in metric.get("rules", []):
+            raise PolicyViolation("final indicator missing its deterministic rule id")
+        if disposition.get("final_indicator_status") != "DRAFT_NOT_APPROVED":
+            raise PolicyViolation("final indicator must remain an unapproved draft")
+        if disposition.get("final_indicator_kind") != metric.get("kind"):
+            raise PolicyViolation("final indicator must be declared a triage metric")
+        if disposition.get("final_indicator_does_not_clear_hit") is not True:
+            raise PolicyViolation("final indicator may never clear or whitelist a hit")
+        if disposition.get("final_indicator_changes_business_conclusion") is not False:
+            raise PolicyViolation("final indicator may not rewrite the business conclusion")
+        basis = disposition.get("final_indicator_basis")
+        if not isinstance(basis, list) or not basis or not all(isinstance(x, str) and x for x in basis):
+            raise PolicyViolation("final indicator requires deterministic evidence basis")
+        if indicator == "命中" and business != "命中":
+            raise PolicyViolation("final indicator may not upgrade an unconfirmed hit")
+        if indicator == "误报·未命中" and (business in {"命中", "疑似命中"} or
+                                    disposition.get("report_recommended") or
+                                    disposition.get("identity_status") == "strong_link"):
+            raise PolicyViolation("false-positive grouping may not downgrade a confirmed/suspected hit")
         if not isinstance(disposition["internal_note"], str) or not disposition["internal_note"].strip():
             raise PolicyViolation("disposition requires concise internal note")
         if disposition.get("automatically_sent") or disposition.get("automatically_cleared"):

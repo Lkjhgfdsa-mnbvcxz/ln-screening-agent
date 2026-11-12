@@ -38,7 +38,7 @@ class PublicDemoSafetyTests(unittest.TestCase):
     def test_published_data_is_synthetic_only(self):
         p = _payload()
         blob = json.dumps(p, ensure_ascii=False)
-        self.assertEqual(p["schema"], "ln-agent-demo-workbench/1.1")
+        self.assertEqual(p["schema"], "ln-agent-demo-workbench/1.2")
         for marker in FORBIDDEN:
             self.assertNotIn(marker, blob, f"real-data marker leaked: {marker}")
         self.assertIsNone(INTERNAL_HOST.search(blob), "internal system URL leaked")
@@ -77,9 +77,54 @@ class PublicDemoSafetyTests(unittest.TestCase):
                 if hit["conclusion"] == "无法确定":
                     self.assertIn("无法确定", hit["reason"])
                     self.assertNotIn("误报", hit["reason"])
+                self.assertIn(hit["final_indicator"], ("命中", "疑似命中", "误报·未命中"))
+                self.assertIn(hit["final_indicator_rule"], ("FI-1", "FI-2", "FI-3"))
+                self.assertEqual(hit["final_indicator_status"], "DRAFT_NOT_APPROVED")
+                self.assertTrue(hit["indicator_does_not_clear_hit"])
+                self.assertFalse(hit["indicator_changes_business_conclusion"])
+                self.assertTrue(hit["final_indicator_basis"])
         reasons = [h["reason"] for c in p["cases"] for h in c["hits"]]
         self.assertGreater(len(set(reasons)), 100,
                            "per-hit reasons collapsed into templates again")
+
+    def test_final_indicator_resolves_no_conclusion_without_rewriting_it(self):
+        p = _payload()
+        f, t = p["final_indicator"], p["totals"]
+        self.assertEqual(t["final_indicator_distribution"], f["distribution"])
+        self.assertEqual(sum(t["final_indicator_distribution"].values()), 154)
+        self.assertEqual(t["escalation_hits"], t["final_indicator_distribution"]["命中"] +
+                         t["final_indicator_distribution"]["疑似命中"])
+        self.assertAlmostEqual(t["escalation_rate"], t["escalation_hits"] / 154, places=4)
+        self.assertEqual(set(f["rules"]), {"FI-1", "FI-2", "FI-3"})
+        self.assertIn("不改变业务结论", f["boundary"])
+        for case in p["cases"]:
+            self.assertEqual(sum(case["final_indicator_distribution"].values()),
+                             case["hit_count"])
+            self.assertEqual(case["escalation_hits"],
+                             case["final_indicator_distribution"]["命中"] +
+                             case["final_indicator_distribution"]["疑似命中"])
+        # The exact reviewer rule: no special info => 误报·未命中; serious AND
+        # consistent incident location => 疑似命中; confirmed hard match => 命中.
+        no_info = [h for c in p["cases"] for h in c["hits"]
+                   if h["conclusion"] == "无法确定" and not h["location_consistent"]]
+        self.assertTrue(no_info)
+        self.assertTrue(all(h["final_indicator"] == "误报·未命中" for h in no_info))
+        # The business conclusion is NOT rewritten by the derived metric.
+        self.assertTrue(all(h["conclusion"] == "无法确定" and
+                            h["conclusion_status"] == "NO_CONCLUSION" for h in no_info))
+        promoted = [h for c in p["cases"] for h in c["hits"]
+                    if h["conclusion"] == "无法确定" and h["location_consistent"]]
+        self.assertEqual(len(promoted), 5)
+        self.assertTrue(all(h["final_indicator"] == "疑似命中" and
+                            h["final_indicator_rule"] == "FI-2" for h in promoted))
+        hard = [h for c in p["cases"] for h in c["hits"] if h["conclusion"] == "命中"]
+        self.assertEqual(len(hard), 1)
+        self.assertEqual(hard[0]["final_indicator"], "命中")
+        self.assertEqual(hard[0]["final_indicator_rule"], "FI-1")
+        html = DEMO_HTML.read_text(encoding="utf-8")
+        for needle in ("最终指标 · 全批唯一汇总", "需人工复核率", "FI-1 命中",
+                       "FI-2 疑似命中", "FI-3 误报·未命中", "按最终指标："):
+            self.assertIn(needle, html, f"missing final indicator UI: {needle}")
 
     def test_qcc_shaped_profile_and_connector_discipline(self):
         p = _payload()

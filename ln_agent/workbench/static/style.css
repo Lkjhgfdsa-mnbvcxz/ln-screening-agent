@@ -13,6 +13,10 @@
 .business-badge.hit-yes{background:#fce1e4;color:#aa263f}
 .business-badge.none{background:#ecf0f5;color:#65758b}
 .conclusion-hint{display:block;color:#8494a8;font-size:11px;line-height:1.5;margin-top:9px}
+/* v0.9.6 derived triage metric: visually distinct from the business verdict. */
+.indicator-text{display:block;font-size:11px;color:#8a5a12;font-weight:650;margin-top:2px}
+.final-indicator{border:1px solid #eee0c4;border-left:3px solid #d99b2b;border-radius:10px;padding:13px 15px;margin:0 0 17px;background:#fffcf4}
+.indicator-basis{font-size:12px;color:#6b6353;line-height:1.65;margin:9px 0 0}
 .technical-details{margin-top:18px;border-top:1px solid #e7edf3;padding:12px 2px}
 .technical-details summary{cursor:pointer;color:#557195;font-size:12px;font-weight:650;padding:8px 0}
 .technical-details .section{margin-top:12px}

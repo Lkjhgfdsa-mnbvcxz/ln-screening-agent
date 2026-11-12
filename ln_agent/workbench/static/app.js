@@ -84,7 +84,9 @@
       btn.type='button'; btn.onclick=()=>{app.selected=hitId; scheduleRender();};
       const left=node('div');
       const conclusion=decision?.disposition?.business_conclusion;
+      const indicator=decision?.disposition?.final_indicator;
       add(left,node('strong','',hitId),node('small',conclusion?'business-text':'',conclusion || (decision?'尚未形成业务结论':h.phase)));
+      if(indicator) add(left,node('small','indicator-text','最终指标：'+indicator));
       const right=node('div','hit-right');
       add(right,node('span','dot '+(h.state==='done'?'done':h.state==='running'?'running':'')),
         node('span','small-status',h.state==='done'?'已完成':h.state==='running'?'运行中':'等待中'));
@@ -114,6 +116,19 @@
     outcomePanel.appendChild(node('small','conclusion-hint',
       outcome ? '尚未经业务审批，不会自动写回 LN。' : '证据或处理条件不足，暂不生成结论；不能据此判为未命中。'));
     root.appendChild(outcomePanel);
+    const indicator=disp.final_indicator;
+    if(indicator) {
+      const indPanel=node('section','final-indicator');
+      const indHead=node('div','outcome-top');
+      add(indHead,node('span','outcome-caption','最终指标（复核优先级 · 派生统计口径）'),
+        node('span','business-badge '+(indicator==='命中'?'hit-yes':indicator==='疑似命中'?'suspected':'no-hit'),indicator));
+      indPanel.appendChild(indHead);
+      indPanel.appendChild(node('small','conclusion-hint',
+        (disp.final_indicator_rule||'')+' · 仅用于统计与复核优先级；不改变业务结论，不自动放行或清除命中。'));
+      const basis=disp.final_indicator_basis||[];
+      if(basis.length) indPanel.appendChild(node('p','indicator-basis',basis.join('；')));
+      root.appendChild(indPanel);
+    }
     detailLine(root,'内部审核说明',disp.internal_note || '尚无说明','notice');
     if(disp.report_recommended) detailLine(root,'合规沟通草稿（尚未发送）',disp.compliance_message || '待生成','notice');
     const comparison=snap?.prior_comparisons?.[app.selected];

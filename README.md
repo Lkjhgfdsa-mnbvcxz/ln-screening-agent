@@ -4,7 +4,9 @@
 
 面向商户入网（KYB）的 **LN 名单筛查 Agent 系统原型**。它将确定性身份判断、按需调查、文档证据处理和风险处置建议整合为一个可本地运行的工作流：**每条命中独立选择调查路径，面向业务的结论统一为「未命中 / 疑似命中 / 命中」。**
 
-> **当前版本：v0.9.5 · 本地离线 MVP** 　|　 Python 3.10+ · 无必需第三方依赖 · 合成案例 · 默认不调用外部模型 · **219 项离线回归测试通过**
+> **当前版本：v0.9.6 · 本地离线 MVP** 　|　 Python 3.10+ · 无必需第三方依赖 · 合成案例 · 默认不调用外部模型 · **242 项离线回归测试通过**
+
+**v0.9.6 新增「最终指标」**：每条命中除「业务结论草稿」外，还会得到一个明确的 **命中 / 疑似命中 / 误报·未命中** 派生指标，并汇总成全批唯一的 **需人工复核率**。规则是确定性的：证件号 / 注册号硬匹配 → 命中；同样缺身份信息但**名单事由重大且事发地一致** → 疑似命中；**没什么特别信息**（例如根本拿不到只有通知里才有的身份信息、也不重大）→ 误报·未命中。指标是 `Rule Engine → PolicyGuard → Decision Router → Disposition` 之后的**下游统计口径**，不改写业务结论、不自动放行、不因信息不足创建人工调查任务。详见 [`docs/FINAL_INDICATOR.md`](docs/FINAL_INDICATOR.md)。
 
 ## 一打开就能跑：多工单核验工作台 Demo
 
@@ -20,8 +22,8 @@
 
 Demo 按评审最关心的层级组织：
 
-1. **首页 = 工单主体总览**：8 张核查单各是一张卡片，显示命中条数、结论分布、并行墙钟、单条平均耗时。
-2. **点进任一工单 = 逐条命中**：每条命中显示 5 段进度、类别 / 分数 / 来源域名 / 耗时、最终业务结论；点开单行还能看**这一条自己的核查说明与执行路径**。
+1. **首页 = 工单主体总览 + 最终指标面板**：8 张核查单各是一张卡片，显示命中条数、**最终指标分布**、并行墙钟、单条平均耗时；顶部给出全批唯一的「**需人工复核率 11.0%**（17 / 154）」及 FI-1 / FI-2 / FI-3 三条规则。
+2. **点进任一工单 = 逐条命中**：每条命中显示 5 段进度、类别 / 分数 / 来源域名 / 耗时、**最终指标**与业务结论草稿；点开单行还能看**这一条自己的指标依据、核查说明与执行路径**。
 3. **主体画像**：按 `company_ln` / `person_ln` Skill 契约生成企业与个人画像，字段结构取自 WorkBuddy 企查查连接器（`get_company_profile` / `get_company_risk_scan` / `get_executive_risk_scan`），并保留连接器口径「**0 命中仅代表结构化维度当前无记录，不等于主体无风险**」。
 4. **运行一遍 Demo**：4 workers 并行推进，卡片进度条与命中阶段条同步变化。
 
@@ -108,14 +110,16 @@ flowchart TD
 
 ## 一个工单，不同命中走不同路径
 
-| 合成情形 | 业务结论 | 简洁依据 |
-|---|---|---|
-| 两方可靠出生日期存在明确且不可解释的冲突，并满足授权的排除规则 | **未命中** | 出生日期不一致，有可靠排除依据。 |
-| 个人姓名、完整出生日期及有效身份证件号码可靠一致，达到确认规则 | **命中** | 核心身份信息一致；另按名单风险性质处置。 |
-| 企业名称高度一致、地址存在差异，涉及重大名单风险且无法排除关联 | **疑似命中** | 名称一致；地址差异不足以排除，涉及重要名单事由。 |
-| 只有姓名一致，浏览器与模型都未带来可区分身份的独立字段 | **无法确定**（业务结论留空，内部 `RESIDUAL_SUSPICION`） | 逐条写明本条的记录源、LN 记录号与缺失的独立身份字段；不写「未命中」、不自动建人工队列。 |
+| 合成情形 | 业务结论草稿 | 最终指标 | 简洁依据 |
+|---|---|---|---|
+| 两方可靠出生日期存在明确且不可解释的冲突，并满足授权的排除规则 | **未命中** | 误报·未命中 | 出生日期不一致，有可靠排除依据。 |
+| 个人姓名、完整出生日期及有效身份证件号码可靠一致，达到确认规则 | **命中** | 命中（FI-1） | 核心身份信息一致；另按名单风险性质处置。 |
+| 企业名称高度一致、地址存在差异，涉及重大名单风险且无法排除关联 | **疑似命中** | 疑似命中（FI-2） | 名称一致；地址差异不足以排除，涉及重要名单事由。 |
+| 只有姓名一致、拿不到独立身份字段，但名单事由重大且事发地与主体地区一致 | **无法确定**（业务结论留空） | 疑似命中（FI-2） | 同样的信息缺口，但「很严重 + 事发地一致」，保留复核，不归入误报。 |
+| 只有姓名一致，浏览器与模型都未带来可区分身份的独立字段，也无重大事由 | **无法确定**（业务结论留空，内部 `RESIDUAL_SUSPICION`） | 误报·未命中（FI-3） | 逐条写明本条的记录源、LN 记录号与缺失的独立身份字段；按误报**归集**用于统计与复核优先级，**不写「未命中」结论、不放行、不自动建人工队列**。 |
+| 工具 / 政策阻断，或来源存在冲突 | **无法确定** | 疑似命中（FI-2） | 不得归入误报，保留复核。 |
 
-> **当前实现边界：** 工作台与 JSON 已分别输出业务结论、技术路径和审批状态；缺乏足够依据时，业务结论留空，绝不自动写成「未命中」。所有结论均为候选草稿，不会自动审批或写回。
+> **两个轴不要混为一谈：** 业务结论草稿仍严格保持「未命中 / 疑似命中 / 命中 / 留空」，缺乏足够依据时绝不自动写成「未命中」；最终指标是在其之后**派生**的复核优先级与统计口径，`final_indicator_does_not_clear_hit` 恒为 `True`，`PolicyGuard.validate_disposition_draft()` 会拒绝任何篡改。所有结论均为候选草稿，不会自动审批或写回。
 
 ## Agent、Skills 与 Tools 怎样协作？
 
@@ -143,8 +147,9 @@ python3 -m scripts.run_disposition_demo     # 疑似命中与简洁说明示例
 python3 run.py inspect                      # 查看 Skills / Tools 实际状态
 python3 run.py llm-status                   # 检查模型配置，不联网
 python3 scripts/build_demo.py               # 重新生成多工单静态 Demo
-python3 scripts/build_replay.py --tests 219 # 重新生成单案例执行回放
-python3 -m unittest discover -s tests -v    # 219 项离线回归测试
+python3 scripts/build_replay.py --tests 242 # 重新生成单案例执行回放
+python3 scripts/check_sensitive.py          # 推送前全仓敏感数据发布闸门
+python3 -m unittest discover -s tests -v    # 242 项离线回归测试
 ```
 
 可选的大模型接口已预留在 [`ln_agent/llm_adapter.py`](ln_agent/llm_adapter.py)，配置模板见 [`.env.example`](.env.example)。留空即运行合成离线模式。**外部 OpenAI-compatible 自动调查主流程仍未接通**；即使将来接入，模型提取的事实仍需经过证据核实与 PolicyGuard，不能自行决定硬排除或写回名单系统。
@@ -165,7 +170,7 @@ python3 -m unittest discover -s tests -v    # 219 项离线回归测试
 | 业务结论 / 路由 | 业务结论：1 条 `疑似命中`（附 1 份未发送上报草稿）、153 条留空；路由：`RESIDUAL_SUSPICION` 153 条、`EVIDENCE_CONFLICT_REVIEW` 1 条 |
 | 逐条说明 | **154 / 154 条各不相同**，均写明本条记录源、LN 记录号与缺失的独立身份字段 |
 | 安全计数 | 人工队列 0 · 自动发送 0 · 自动放行 0 |
-| 回归测试 | **219 项全部通过**（含 11 项公开 Demo 安全测试、9 项公开回放安全测试、5 项逐条说明回归） |
+| 回归测试 | **242 项全部通过**（含 12 项公开 Demo 安全测试、9 项公开回放安全测试、5 项逐条说明回归、14 项最终指标规则测试、8 项发布闸门测试） |
 
 对照人审结论发现并修复了两类真实缺陷：
 
@@ -175,7 +180,38 @@ python3 -m unittest discover -s tests -v    # 219 项离线回归测试
 
 另外明确锁定了两个**设计性分歧**：跨省/地址不同不得自动排除，信息不足不得自动创建人工调查任务；中文 provider 类别别名 `制裁 / 执法 / PEP / 不利媒体` 已标准化，保证 `SCREENING_REVIEW_REQUIRED` 不被静默丢弃。
 
-> 为什么多数命中仍是「无法确定」？已接通的证据范围内，命中侧普遍只回传 LN 内部记录号，没有可与入网主体做证件级比对的独立字段，引擎按设计停在 `RESIDUAL_SUSPICION` 并逐条记录证据缺口。这既不等于「误报」，也不等于「放行」，更不等于可以据此免审。
+> 为什么多数命中的**业务结论**仍是「无法确定」？已接通的证据范围内，命中侧普遍只回传 LN 内部记录号，没有可与入网主体做证件级比对的独立字段，引擎按设计停在 `RESIDUAL_SUSPICION` 并逐条记录证据缺口。这既不等于「误报」，也不等于「放行」，更不等于可以据此免审。
+>
+> v0.9.6 起，这些命中在**最终指标**这个独立轴上不再停在「无结论」：无重大事由 / 事发地不一致的按 FI-3 归入「误报·未命中」用于统计与复核优先级；重大且事发地一致的按 FI-2 保留「疑似命中」。业务结论草稿一字未改。合成 Demo 中 154 条命中→ 命中 1 / 疑似命中 16 / 误报·未命中 137，**需人工复核率 11.0%**。
+
+## 严格基于项目机制，以及修掉的项目自身缺陷
+
+**回答评审常问的一句：这次是按项目既有机制跑的，还是项目本身有问题、我顺手改了？——两者都有。** 审核流程没有重新设计，但真实运行确实暴露了项目自身若干缺陷，逐项修复并补了回归测试。完整清单见 [`docs/FINAL_INDICATOR.md`](docs/FINAL_INDICATOR.md) 的「机制边界与优化清单」。
+
+**完全沿用、没有重做的部分**
+
+- `Rule Engine → PolicyGuard → RiskGate → Decision Router → Disposition` 的顺序与判定逻辑；`Investigation Agent` 只按 Router 授权结果调用适配器。
+- `Fact` 四态字段、`eligible_for_hard()` 来源白名单、脱敏值不参与硬相等 / 冲突；硬排除规则必须经公司批准。
+- Skill `contract.json` 与 Tool `tool.json` 的权限登记、`check_tool_call()`、`validate_facts()`、`validate_disposition_draft()` 三道围栏；模型事实恒为 `model_extracted / checked=false`。
+- 业务结论只有「未命中 / 疑似命中 / 命中」，且一律 `DRAFT_NOT_APPROVED`；不自动发送、放行、关闭工单或写回。
+- 本地 SSE 实时工作台、Reviewer ledger、事件留痕与既有 219 项测试的行为契约。
+
+**项目自身确实存在的缺陷（已修复，附回归测试）**
+
+| # | 缺陷 | 后果 | 修复 |
+|---|---|---|---|
+| 1 | 授权本地转换器只把姓名喂给引擎，丢弃 `分数 / 记录源 / ID号码 / LN报警ID / 地址 / 申请人 USCC` | 154 条命中几乎全部「无结论」，真实命中单被判成留空 | 重建项目既有 `Hit.risk_event` 通道，补 `registration_number` 等结构化事实；真实命中单恢复为「疑似命中」 |
+| 2 | `disposition.py` 证据不足分支吞掉逐条上下文 | 150+ 条说明塌缩成同一句模板 | 补记录源、主域名、LN 记录号与缺字段说明；`tests/test_per_hit_reason.py` 锁定 154/154 各不相同 |
+| 3 | `run_authorized.py` 从 `details` 取 `HIT_FINISHED.duration_ms`，实际在事件顶层 | 154 个耗时全是 null，性能统计无从谈起 | 改取顶层字段并从事件日志重算 |
+| 4 | 把 `Orchestrator.stats.elapsed_ms`（整单 4-worker 并行后墙钟）当作单条耗时，再除以 4 | 4 倍加速被算了两次；逐单串行累计墙钟被标成「并行总墙钟」 | 区分单条工作量 / 单内墙钟 / 逐单累计 / 全批同时开跑三种口径，Demo 动画改为 8 主体同时开始 |
+| 5 | `ReviewStore.backup()` 用 `with sqlite3.connect()` 只管事务不关连接 | sqlite 句柄泄漏 + `ResourceWarning` | 改用 `closing()`，并加断言两个连接都关闭 |
+| 6 | `build_replay.py` 会覆盖 `index.html` | 多工单 Demo 入口被单案例回放抢走 | 入口归属 `build_demo.py`，并加回归测试 |
+| 7 | 中文 provider 类别别名缺失 | `SCREENING_REVIEW_REQUIRED` 被静默丢弃 | 补 `制裁 / 执法 / 政治公众人物 / 不利媒体` 别名 |
+| 8 | 初始提交的测试文件里写了真实工单号与真实企业名 | 公开仓库历史里残留真实业务标识 | 重写 git 历史清除该文件，并加 `scripts/check_sensitive.py` 全仓 + 全历史发布闸门 |
+
+**在既有链路上新增、而非另起炉灶的能力**：`workbuddy_browser_readonly` / `workbuddy_llm_capture` 两个 Tool 与 `workbuddy_capture` Skill（通过 `tool_for_source_key()` 查表挂到 Router）、`Decision.research_facts` 来源证据、公开合成回放、按工单主体的静态 Demo、下游派生的最终指标、发布闸门。
+
+> 公开仓库**只含合成数据与聚合计数**。真实工单、DOM 抓取、完整事件日志、内部域名与凭证只留在授权本地目录；`python3 scripts/check_sensitive.py` 会在推送前按形态扫描全部跟踪文件与全部历史提交，也可用 `--vocab <仓库外路径>` 加跑词表检查。
 
 ## 已接通 / 未接通功能清单
 
@@ -189,6 +225,8 @@ python3 -m unittest discover -s tests -v    # 219 项离线回归测试
 | WorkBuddy 会话内模型 staged 抽取（`model:` 前缀，零外部 API 调用） | 外部 OpenAI-compatible 自动调查主流程（仍为 optional） |
 | 中文 provider 类别标准化、`Decision.research_facts` 来源证据导出 | 任意用户文档上传、长期任务完整断点恢复 |
 | 企查查连接器**字段结构**的主体画像（合成值，明确标注未实时查询） | 企查查真实画像落库与自动交叉验证 |
+| **最终指标 FI-1/2/3**、工单级汇总与需人工复核率（派生统计口径） | 把最终指标当作已批准的业务处置结论（明确未做） |
+| **全仓 + 全历史敏感数据发布闸门** `scripts/check_sensitive.py` | 真实业务数据的公网托管与在线查询 |
 | 合成案例、离线回放、逐条业务说明、未发送的上报草稿 | LLM 自主搜索规划与自主终止调查 |
 
 > [!IMPORTANT]
@@ -196,7 +234,7 @@ python3 -m unittest discover -s tests -v    # 219 项离线回归测试
 
 ## 深入阅读
 
-[多工单 Demo](demo.html) · [执行回放](replay.html) · [本地工作台与事件接口](docs/WORKBENCH.md) · [WorkBuddy 本地能力接入](docs/WORKBUDDY_INTEGRATION.md) · [处置说明生成](docs/DISPOSITION_OUTPUTS.md) · [Skill 目录](skills/README.md) · [Tool 目录](tools/README.md) · [合成案例说明](examples/README.md) · [WorkBuddy 开发交接](docs/WORKBUDDY_HANDOFF.md) · [Agent 开发约束](AGENTS.md)
+[多工单 Demo](demo.html) · [执行回放](replay.html) · [最终指标与机制边界](docs/FINAL_INDICATOR.md) · [本地工作台与事件接口](docs/WORKBENCH.md) · [WorkBuddy 本地能力接入](docs/WORKBUDDY_INTEGRATION.md) · [处置说明生成](docs/DISPOSITION_OUTPUTS.md) · [Skill 目录](skills/README.md) · [Tool 目录](tools/README.md) · [合成案例说明](examples/README.md) · [WorkBuddy 开发交接](docs/WORKBUDDY_HANDOFF.md) · [Agent 开发约束](AGENTS.md)
 
 ---
 

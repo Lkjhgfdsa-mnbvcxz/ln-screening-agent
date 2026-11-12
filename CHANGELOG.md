@@ -1,3 +1,26 @@
+## V0.9.6 — Final indicator (FI-1/2/3), publication gate, history scrub
+
+### Final indicator: explicit outcome for every hit, one batch-level metric
+
+- New `ln_agent/final_indicator.py` derives a **downstream, read-only triage metric** strictly after `build_disposition()`, consuming only rule/evidence outputs the existing pipeline already produced. No model call, no new fact, no new decision.
+  - **FI-1 命中**: confirmed `business_conclusion == "命中"` + `identity == "strong_link"`; hard match rules recorded in the basis.
+  - **FI-2 疑似命中**: existing report draft / mandatory escalation / **serious source-attributed event AND consistent incident location**; policy blocks and source conflicts are also retained here (never grouped as false positives).
+  - **FI-3 误报·未命中**: no material risk information — e.g. identity fields that only the notice carries cannot be obtained and nothing serious is attached. Grouped for statistics / review priority only.
+- "事发地一致" is an exact normalised match between explicit structured location fields; missing values are UNKNOWN, never "consistent"; masked values never participate.
+- `final_indicator_does_not_clear_hit` is always `True` and `final_indicator_changes_business_conclusion` always `False`. `PolicyGuard.validate_disposition_draft()` rejects unknown labels, tampered status/basis, upgrading an unconfirmed hit, downgrading a confirmed/suspected hit, and any attempt to clear a hit. `skills/disposition_reporting/contract.json` declares the derived metric separately from `prohibited_shortcuts`, so the original "信息不足自动判误报" guard on the real disposition is intact.
+- `derive_case_indicator()` rolls hits up to a checklist-level indicator, distribution and escalation rate. Batch metric: **需人工复核率 =（命中 + 疑似命中）/ 全部命中**.
+- Live workbench (`app.js` / `style.css`) shows the indicator and its basis in a visually distinct panel below the business verdict; the hit list shows it too. `replay.html` shows the indicator, rule id and basis per hit.
+- Public demo schema bumped to `ln-agent-demo-workbench/1.2`: home page has a **final indicator panel** (rules + 3-way distribution + 11.0% escalation rate), every case card has a case-level indicator, every hit has both `业务结论` and `最终指标` plus `指标依据`, and the hit filter is by final indicator. Five synthetic hits demonstrate the reviewer's rule "same missing identity information, but serious + consistent incident location ⇒ 疑似命中" while their business conclusion stays `无法确定`.
+- 14 new tests in `tests/test_final_indicator.py`; `tests/test_public_demo.py` gains a full indicator-consistency test.
+
+### Sensitive data hidden, then synced
+
+- Replaced the USCC-shaped synthetic token in public examples with a clearly non-identifier value (`SYNTH-USCC-00017`) so even the *shape* of a real registration number is gone.
+- New `scripts/check_sensitive.py` publication gate scans every tracked/pending text file **and every published git revision** for real-shaped case ids, internal hosts, provider secrets, platform tokens, identity numbers, USCCs, internal review routes and capture markers. Patterns are assembled from fragments so the gate itself stores no real value; an optional out-of-repo vocabulary can be supplied with `--vocab`.
+- The **initial commit's test file contained a real case id and real company names**. Git history was rewritten to remove that file from every revision; `tests/test_publication_gate.py` (8 tests) now fails the build if any real-shaped case id reappears in history or the working tree.
+- New `docs/FINAL_INDICATOR.md` documents the exact rule, the boundary, and the "based on the project + fixed project defects" optimisation list. README / AGENTS / WORKBENCH / examples README updated accordingly.
+- Full suite: **242 tests passing**.
+
 ## V0.9.5 — Concurrency semantics corrected (m subjects start together)
 
 - **The published timing model was wrong.** `Orchestrator.stats.elapsed_ms` is the whole-case wall clock *after* the 4-worker `ThreadPoolExecutor`, not the sum of per-hit work. The authorized runner also read `HIT_FINISHED.duration_ms` from `details` instead of the event's top-level field, producing 154 nulls. As a result the demo treated the post-parallel share `103.391 ms` as if it were one hit's cost, divided by 4 a second time (double-counted speedup), and labelled the serial sum of eight case wall clocks as "parallel wall time".
