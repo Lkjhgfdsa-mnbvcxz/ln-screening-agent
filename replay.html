@@ -193,7 +193,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
       if(r.note) rows += `<tr class="cmp-note"><td colspan="4">${esc(r.note)}</td></tr>`;
     });
     return `<div class="plain-box">
-      <div class="plain-cap">这条命中到底怎么回事 · 人话版</div>
+      <div class="plain-cap">这条命中怎么判的</div>
       <div class="plain-h">${esc(p.headline)}</div>
       ${rows ? `<table class="cmp"><thead><tr><th>字段</th><th>入网主体</th><th>名单记录</th><th>比对结果</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
       ${q("为什么这么判：",p.why)}${q("为什么不是别的结论：",p.why_not)}

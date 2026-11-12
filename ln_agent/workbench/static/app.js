@@ -104,7 +104,7 @@
      already-final decision; all engine codes/routes stay behind <details>. */
   function plainCard(root, plain) {
     const card=node('section','plain-summary');
-    add(card,node('div','plain-caption','这条命中到底怎么回事 · 人话版'));
+    add(card,node('div','plain-caption','这条命中怎么判的'));
     add(card,node('div','plain-head',plain.headline || '—'));
     const rows=Array.isArray(plain.compare)?plain.compare:[];
     if(rows.length) {

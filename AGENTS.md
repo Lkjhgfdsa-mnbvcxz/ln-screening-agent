@@ -76,7 +76,7 @@ No real merchant/customer data or credentials should be committed.
 - Before any push, run `python3 scripts/check_sensitive.py` (optionally `--vocab <path outside repo>`). It scans the working tree **and all published git revisions**; `tests/test_publication_gate.py` must stay green. Never commit a real case id, internal host, credential, identity number, USCC, real subject name or authorized capture bundle — including in git history.
 - The gate stores no real value: build patterns from fragments so the scanner never trips on itself. Real-data checks that need a literal vocabulary must read it from outside the repository.
 
-## Plain-language display layer (v0.9.7)
+## Per-hit conclusion display layer (v0.9.7)
 
 - `ln_agent/plain_language.py` is a **DISPLAY_ONLY explanation layer**, not a decision step. It is
   called by `build_disposition()` only *after* `recommendation` / `business_conclusion` / `report` /

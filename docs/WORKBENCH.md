@@ -82,7 +82,7 @@ python3 run.py web --port 8766 # 自定义端口
 - 公开 Demo 首页新增「最终指标 · 全批唯一汇总」面板：三条规则、三标签分布、以及全批唯一的**需人工复核率 11.0%（17 / 154）**；每条命中可按最终指标筛选。
 - 规则与边界详见 [`FINAL_INDICATOR.md`](FINAL_INDICATOR.md)。推送前另跑 `python3 scripts/check_sensitive.py` 全仓 + 全历史脱敏闸门。
 
-## 人话说明层（V0.9.7）
+## 逐条结论说明（V0.9.7）
 
 业务结论与最终指标**仍然分两行显示**，但详情区的主展示换成了 `disp.plain_summary`：
 
@@ -94,7 +94,7 @@ python3 run.py web --port 8766 # 自定义端口
   「查看技术字段与执行路径（给开发 / 审计看）」。**不要把状态码重新搬回首屏。**
 - 公开 Demo 首页新增「这一批是怎么判的 · 先看这里」，每条命中展开后先显示 `explanation`，
   技术字段折叠在 `<details class="ex-tech">`，schema `ln-agent-demo-workbench/1.3`。
-- `replay.html` 命中卡片标题改用 `plain_summary.headline`，详情面板渲染同一套人话卡片。
+- `replay.html` 命中卡片标题改用 `plain_summary.headline`，详情面板渲染同一套结论说明卡片。
 - 展示层不参与判定：`plain_summary.kind == "DISPLAY_ONLY"`，
   `changes_business_conclusion / adds_evidence / clears_hit` 恒为 `False`，
   由 `PolicyGuard.validate_disposition_draft()` 强制。详见 [`PLAIN_LANGUAGE.md`](PLAIN_LANGUAGE.md)。

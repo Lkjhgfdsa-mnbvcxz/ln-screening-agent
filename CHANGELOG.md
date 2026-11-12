@@ -1,6 +1,6 @@
-## V0.9.7 — Plain-language, DISPLAY-ONLY explanation layer
+## V0.9.7 — Per-hit conclusion display layer (DISPLAY_ONLY)
 
-> Reviewer feedback: "不是你看这个结果像人话吗 谁看得懂啊 到底是怎么命中的 其他排除是怎么排除",
+> Reviewer feedback: 结果看不懂，需要写清「到底是怎么命中的」「其他同名命中是怎么排除的」；
 > and "这个专家，谁会让你跑 demo 啊，第一条应该是让他去查这个命中没命中不良记录".
 
 ### What changed (display only — the decision chain is untouched)
@@ -24,7 +24,7 @@
   instead of only the first two items; the `business_conclusion` vs `final_indicator` two-axis
   difference is explained when they disagree.
 - **Public demo** (`scripts/build_demo.py`, schema `ln-agent-demo-workbench/1.3`): home page gains
-  "这一批是怎么判的 · 先看这里" (4 plain-language cards covering 命中 / 疑似命中 / 误报·未命中 /
+  "这一批是怎么判的 · 先看这里" (4 summary cards covering 命中 / 疑似命中 / 误报·未命中 /
   why large batches group as false positives). Every one of the 154 hits gets a unique
   `explanation` (tag / headline / field comparison / why / why_not / next_step / evidence /
   caveat) and `path_cn`. Machine fields move into a collapsed `<details class="ex-tech">`.
@@ -35,11 +35,11 @@
   route, rule ids, technical status and raw execution path move into the collapsed
   "查看技术字段与执行路径（给开发 / 审计看）" block.
 - **Replay** (`scripts/build_replay.py`): each hit carries `plain_summary`; hit cards lead with its
-  headline and the detail pane renders the same plain-language card.
+  headline and the detail pane renders the same conclusion card.
 - **WorkBuddy Agent expert** (`ln-screening-expert` v1.1.0): `defaultInitPrompt` and the first
   quick prompts are now business verification questions ("does this hit have an adverse record,
   is it a real hit, which fields were compared, how were the others excluded") instead of
-  "run the demo". The Agent MD adds a "第零原则：先回答业务问题" and a hard plain-language output
+  "run the demo". The Agent MD adds a "第零原则：先回答业务问题" and a strict per-hit output
   spec that bans status codes as the primary display.
 - New `docs/PLAIN_LANGUAGE.md` documents the boundary and the field contract.
 - Tests: 2 new demo tests + 15 new `tests/test_plain_language.py` tests, **259 passing**.

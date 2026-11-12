@@ -19,7 +19,7 @@
 ## 可复现接口
 `ln_agent.disposition.build_disposition(...)` 生成文案；`PolicyGuard.validate_disposition_draft(...)` 强制检查输出契约；`DecisionRouter.finish` 在返回 Decision 之前执行。
 
-## 人话说明是展示层（v0.9.7）
+## 结论说明是展示层（v0.9.7）
 所有决策字段定稿后，`ln_agent.plain_language.build_plain_summary(...)` 追加 `plain_summary`
 （一句话结论 + 字段比对表 + 为什么这么判 + 为什么不是别的结论 + 复核人下一步）。
 它由 `contract.json` 的 `display_layer` 声明为 `DISPLAY_ONLY`，三个改动标志恒为 `False`，

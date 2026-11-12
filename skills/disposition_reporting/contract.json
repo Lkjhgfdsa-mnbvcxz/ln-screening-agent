@@ -23,6 +23,6 @@
     "required_fields": ["kind", "headline", "compare", "why", "why_not", "next_step", "evidence", "caveat"],
     "must_always_be_false": ["changes_business_conclusion", "adds_evidence", "clears_hit"],
     "prohibited_actions": ["改写业务结论或最终指标", "新增证据或把模型文字当作已核实事实", "用说明文字暗示已放行", "因信息不足创建人工调查任务"],
-    "note": "人话说明是 Rule Engine → PolicyGuard → Decision Router → Disposition 之后的展示层；只解释既有结论，不参与判定。没有证据表明是同一主体时，必须写明『不是放行』。"
+    "note": "结论说明是 Rule Engine → PolicyGuard → Decision Router → Disposition 之后的展示层；只解释既有结论，不参与判定。没有证据表明是同一主体时，必须写明『不是放行』。"
   }
 }
