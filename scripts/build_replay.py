@@ -5,7 +5,7 @@ embeds the *actual* emitted event stream into a single static HTML file. No
 network request, no credential, no real merchant / identity / internal URL is
 ever read by this script.
 
-    python3 scripts/build_replay.py --tests 219
+    python3 scripts/build_replay.py --tests 259
 
 Outputs:
     examples/workbuddy_capture_replay.json   machine-readable replay data
@@ -137,6 +137,7 @@ def _hit_summaries(report: dict, events: list[dict]) -> list[dict]:
             "conclusion_source": disp["conclusion_source"],
             "recommendation": disp["recommendation"],
             "internal_note": disp["internal_note"],
+            "plain_summary": disp.get("plain_summary"),
             "report_recommended": disp["report_recommended"],
             "manual_queue_required": disp["manual_queue_required"],
             "automatically_sent": disp["automatically_sent"],
@@ -293,6 +294,14 @@ pre{background:var(--codebg);color:var(--code);border:1px solid var(--border);bo
 .c-none{background:#eef1f5;color:#5b6575}.c-clear{background:#e6f4ff;color:#1668b3}.c-suspect{background:#fff3dc;color:#9a6100}.c-hit{background:#ffe9e9;color:#b3261e}
 html[data-theme="dark"] .c-none{background:#252d38;color:#adb8c8}html[data-theme="dark"] .c-clear{background:#17324d;color:#8dc4ff}html[data-theme="dark"] .c-suspect{background:#3d2f13;color:#f4c775}html[data-theme="dark"] .c-hit{background:#451f22;color:#ff9d99}
 .note{font-size:12.5px;color:var(--text);margin:6px 0 0}
+.note.plain-head{font-size:13px;font-weight:650;line-height:1.6}
+.plain-box{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;background:var(--panel2);padding:14px 16px;margin:14px 0}
+.plain-cap{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--accent);margin-bottom:8px}
+.plain-h{font-size:15px;font-weight:700;line-height:1.65;margin-bottom:11px}
+.plain-box table.cmp{margin:8px 0 12px;font-size:12px}
+.plain-box table.cmp th,.plain-box table.cmp td{padding:6px 9px;border:1px solid var(--border)}
+.plain-box table.cmp tr.cmp-note td{font-size:11px;color:var(--muted);border-top:0}
+.plain-box .note b{color:var(--accent);margin-right:4px}
 .path{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
 .path i{font-style:normal;font-size:11px;background:var(--accent-soft);color:var(--accent);border-radius:5px;padding:2px 7px}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -399,6 +408,24 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const ms = v => (typeof v === "number" ? v.toFixed(v < 10 ? 2 : 1) + " ms" : "—");
+  // v0.9.7 display-only human-language explanation of an already-final decision.
+  const plainBox = h => {
+    const p = h.plain_summary;
+    if(!p) return "";
+    const q = (label, text) => text ? `<p class="note"><b>${label}</b>${esc(text)}</p>` : "";
+    let rows = "";
+    (p.compare||[]).forEach(r => {
+      rows += `<tr><td>${esc(r.field)}</td><td>${esc(r.subject)}</td><td>${esc(r.list)}</td><td>${esc(r.result)}</td></tr>`;
+      if(r.note) rows += `<tr class="cmp-note"><td colspan="4">${esc(r.note)}</td></tr>`;
+    });
+    return `<div class="plain-box">
+      <div class="plain-cap">这条命中到底怎么回事 · 人话版</div>
+      <div class="plain-h">${esc(p.headline)}</div>
+      ${rows ? `<table class="cmp"><thead><tr><th>字段</th><th>入网主体</th><th>名单记录</th><th>比对结果</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+      ${q("为什么这么判：",p.why)}${q("为什么不是别的结论：",p.why_not)}
+      ${q("复核人下一步做什么：",p.next_step)}${q("证据来源：",p.evidence)}${q("边界：",p.caveat)}
+    </div>`;
+  };
 
   let view = EV.slice(), idx = 0, playing = false, speed = 1, timer = null, filter = "ALL", selected = HITS[0] ? HITS[0].hit_id : null;
 
@@ -518,7 +545,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
       <div class="row1"><span class="hid">${esc(h.hit_id)} <span class="meta">${esc(h.entity_type)} · ${esc(h.category)}</span></span>
       <span class="chip ${chip(h.business_conclusion)}">${esc(h.business_conclusion||"无结论")}</span></div>
       <div class="meta">路由 ${esc(h.route)} · ${esc(h.business_conclusion_status)} · 最终指标 ${esc(h.final_indicator)} (${esc(h.final_indicator_rule)}) · 耗时 ${ms(h.duration_ms)}</div>
-      <p class="note">${esc(h.internal_note||"证据不足，未形成业务结论。")}</p>
+      <p class="note plain-head">${esc((h.plain_summary&&h.plain_summary.headline)||h.internal_note||"证据不足，未形成业务结论。")}</p>
       <div class="path">${h.execution_path.slice(0,8).map(p=>`<i>${esc(p.action)}</i>`).join("")}</div>
     </div>`).join("");
   $("hitcards").addEventListener("click", e=>{
@@ -544,6 +571,7 @@ footer{margin-top:22px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
         <span>人工队列 <b>${h.manual_queue_required?"是":"否"}</b></span>
         <span>自动发送 <b>${h.automatically_sent?"是":"否"}</b></span>
       </div>
+      ${plainBox(h)}
       <p class="note"><b>最终指标依据</b>：${(h.final_indicator_basis||[]).map(esc).join("；")}（派生统计口径，不改变业务结论、不自动放行）</p>
       <p class="note"><b>执行路径</b></p>
       <div class="path">${h.execution_path.map((p,i)=>`<i>${i+1}. ${esc(p.action)}${p.tool?" · "+esc(p.tool):""}${p.key?" · "+esc(p.key):""}</i>`).join("")}</div>

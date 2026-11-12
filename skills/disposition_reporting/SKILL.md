@@ -19,6 +19,13 @@
 ## 可复现接口
 `ln_agent.disposition.build_disposition(...)` 生成文案；`PolicyGuard.validate_disposition_draft(...)` 强制检查输出契约；`DecisionRouter.finish` 在返回 Decision 之前执行。
 
+## 人话说明是展示层（v0.9.7）
+所有决策字段定稿后，`ln_agent.plain_language.build_plain_summary(...)` 追加 `plain_summary`
+（一句话结论 + 字段比对表 + 为什么这么判 + 为什么不是别的结论 + 复核人下一步）。
+它由 `contract.json` 的 `display_layer` 声明为 `DISPLAY_ONLY`，三个改动标志恒为 `False`，
+**不得用它改写业务结论、新增证据或暗示已放行**。技术状态码折叠到次要区域，
+不得以 `DRAFT_NOT_APPROVED` / `FI-*` / 规则 ID 作为给人看的主展示。
+
 ## 业务结论与技术状态
 
 业务展示只使用 **未命中 / 疑似命中 / 命中**。技术路由（例如 `RESIDUAL_SUSPICION`）不得作为业务结论。证据不足或工具异常且尚无依据形成结论时，`business_conclusion=null`，不自动判未命中。全部结论仅是草稿，需按授权政策处置。

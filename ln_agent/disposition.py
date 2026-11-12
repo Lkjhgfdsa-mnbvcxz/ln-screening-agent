@@ -9,6 +9,7 @@ from typing import Any
 import re
 from .evidence import norm
 from .final_indicator import derive_final_indicator
+from .plain_language import build_plain_summary
 from .models import Case, Subject, Hit, EvidenceResult
 from .policy import Policy
 from .risk_categories import risk_categories, any_category
@@ -202,6 +203,16 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
         report_message = f"{case_ref}｜{entity_label}\n{internal}\n辛苦老师复核查看，谢谢。"
         if review_url:
             report_message += f"\n复核链接：{review_url}"
+    # v0.9.7: display-only plain-language account. Computed LAST, after every
+    # decision field above is final; it reads existing values and changes none.
+    plain = build_plain_summary(
+        subject=subject, hit=hit, evidence=evidence, identity=identity,
+        business_conclusion=business_conclusion,
+        final_indicator=indicator["final_indicator"],
+        final_indicator_rule=indicator["final_indicator_rule"],
+        final_indicator_basis=indicator["final_indicator_basis"],
+        recommendation=recommendation, report_recommended=report,
+        hit_facts=current_facts, source_refs=anchor_refs)
     # Draft recommendation isn't an automatic report or a manual research queue.
     return {
         "recommendation": recommendation,  # legacy technical disposition path
@@ -221,4 +232,5 @@ def build_disposition(*, case: Case, subject: Subject, hit: Hit,
         "attribution": "LN风险事由来自输入的来源标识；尚未独立核实" if risk_summary else "未提供可引用的风险事由来源",
         "policy_status": "候选上报规则未经公司批准；不自动发送、放行或关闭 LN 工单",
         **indicator,
+        "plain_summary": plain,
     }

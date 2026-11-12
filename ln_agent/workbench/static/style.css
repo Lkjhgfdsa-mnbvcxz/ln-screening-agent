@@ -20,3 +20,25 @@
 .technical-details{margin-top:18px;border-top:1px solid #e7edf3;padding:12px 2px}
 .technical-details summary{cursor:pointer;color:#557195;font-size:12px;font-weight:650;padding:8px 0}
 .technical-details .section{margin-top:12px}
+
+/* v0.9.7: plain-language explanation is the primary readable surface. */
+.plain-summary{border:1px solid #cfe0f5;border-left:3px solid #3c77ed;border-radius:11px;background:#fbfdff;padding:16px 18px 14px;margin:0 0 17px}
+.plain-caption{font-size:11px;font-weight:800;letter-spacing:1px;color:#3c6bb5;margin-bottom:9px}
+.plain-head{font-size:16px;font-weight:720;line-height:1.65;color:#182a45;margin-bottom:14px}
+.plain-q{font-size:12px;font-weight:700;color:#516781;margin:14px 0 7px}
+.plain-summary table.cmp{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+.plain-summary table.cmp th{background:#eef4fd;color:#3c5578;text-align:left;font-weight:700;padding:8px 10px;border:1px solid #dce7f5;white-space:nowrap}
+.plain-summary table.cmp td{padding:8px 10px;border:1px solid #e5ecf5;color:#33445e;vertical-align:top;word-break:break-word}
+.plain-summary table.cmp .cmp-r{font-weight:750;white-space:nowrap}
+.plain-summary table.cmp .cmp-r.same{color:#0c7252;background:#eaf8f1}
+.plain-summary table.cmp .cmp-r.conflict{color:#aa263f;background:#fdebee}
+.plain-summary table.cmp .cmp-r.unknown{color:#7a6a45;background:#faf5e9}
+.plain-summary table.cmp .cmp-r.masked{color:#65758b;background:#f1f4f8}
+.plain-summary table.cmp .cmp-note td{font-size:11px;color:#8494a8;background:#fafbfd;border-top:0;padding-top:2px}
+.plain-line{font-size:13px;line-height:1.8;color:#33445e;margin:9px 0}
+.plain-line b{display:block;font-size:12px;color:#3c6bb5;margin-bottom:1px}
+.plain-line span{display:block}
+.plain-line.plain-next{background:#eef7f2;border-left:2px solid #45a37a;padding:9px 11px;border-radius:0 7px 7px 0}
+.plain-line.plain-next b{color:#19704f}
+.plain-line.plain-caveat{font-size:11px;color:#8a7350;background:#fffaf0;padding:8px 11px;border-radius:7px}
+.plain-line.plain-caveat b{color:#9b7a34}

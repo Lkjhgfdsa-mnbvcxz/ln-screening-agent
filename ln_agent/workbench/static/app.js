@@ -100,6 +100,43 @@
     const section=node('section','section '+clazz);
     add(section,node('h3','',heading),node('p','',value || '—')); parent.appendChild(section);
   }
+  /* v0.9.7: the plain-language card is the PRIMARY view. It only explains an
+     already-final decision; all engine codes/routes stay behind <details>. */
+  function plainCard(root, plain) {
+    const card=node('section','plain-summary');
+    add(card,node('div','plain-caption','这条命中到底怎么回事 · 人话版'));
+    add(card,node('div','plain-head',plain.headline || '—'));
+    const rows=Array.isArray(plain.compare)?plain.compare:[];
+    if(rows.length) {
+      add(card,node('div','plain-q','比了哪些字段：'));
+      const table=node('table','cmp');
+      const head=node('thead'); const hr=node('tr');
+      ['字段','入网主体','名单记录','比对结果'].forEach(x=>add(hr,node('th','',x)));
+      add(head,hr); table.appendChild(head);
+      const body=node('tbody');
+      for(const r of rows) {
+        const tr=node('tr');
+        const rcls={'一致':'same','明确冲突':'conflict','无法比对':'unknown','脱敏':'masked'}[r.result]||'other';
+        add(tr,node('td','',r.field||'—'),node('td','',r.subject||'—'),
+          node('td','',r.list||'—'),node('td','cmp-r '+rcls,r.result||'—'));
+        body.appendChild(tr);
+        if(r.note) {
+          const nr=node('tr','cmp-note'); const cell=node('td','',r.note);
+          cell.colSpan=4; add(nr,cell); body.appendChild(nr);
+        }
+      }
+      table.appendChild(body); card.appendChild(table);
+    }
+    const q=(label,text,cls)=>{ if(!text) return;
+      const box=node('div','plain-line '+(cls||''));
+      add(box,node('b','',label),node('span','',text)); card.appendChild(box); };
+    q('为什么这么判：',plain.why);
+    q('为什么不是别的结论：',plain.why_not);
+    q('复核人下一步做什么：',plain.next_step,'plain-next');
+    q('证据来源：',plain.evidence);
+    q('边界：',plain.caveat,'plain-caveat');
+    root.appendChild(card);
+  }
   function renderDetail() {
     const container=$('detail'); const snap=app.snapshot;
     const decision=snap?.decisions?.[app.selected]; $('copy').disabled=!decision?.disposition?.internal_note; $('download').disabled=!snap?.report_ready;
@@ -129,7 +166,7 @@
       if(basis.length) indPanel.appendChild(node('p','indicator-basis',basis.join('；')));
       root.appendChild(indPanel);
     }
-    detailLine(root,'内部审核说明',disp.internal_note || '尚无说明','notice');
+    if(disp.plain_summary) plainCard(root,disp.plain_summary);
     if(disp.report_recommended) detailLine(root,'合规沟通草稿（尚未发送）',disp.compliance_message || '待生成','notice');
     const comparison=snap?.prior_comparisons?.[app.selected];
     if(comparison) {
@@ -142,7 +179,8 @@
     }
     const matching=app.events.filter(x=>x.hit_id===app.selected);
     const technical=node('details','technical-details');
-    technical.appendChild(node('summary','','查看证据来源与执行细节'));
+    technical.appendChild(node('summary','','查看技术字段与执行路径（给开发 / 审计看）'));
+    detailLine(technical,'内部审核说明（技术口径）',disp.internal_note || '尚无说明');
     detailLine(technical,'身份判断 / 内部路由', (decision.identity || '—')+' · '+(decision.route || '—'));
     detailLine(technical,'触发规则与来源',
       '规则：'+(decision.rule_findings || []).map(x=>x.rule_id).slice(0,6).join('、')+

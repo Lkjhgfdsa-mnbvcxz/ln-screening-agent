@@ -75,3 +75,35 @@ No real merchant/customer data or credentials should be committed.
 - Keep `business_conclusion` (业务结论草稿) and `final_indicator` (复核优先级 / 统计口径) as **two separate displayed axes** in the workbench, the replay and the public demo. The batch metric is 需人工复核率 =(命中 + 疑似命中)/全部命中.
 - Before any push, run `python3 scripts/check_sensitive.py` (optionally `--vocab <path outside repo>`). It scans the working tree **and all published git revisions**; `tests/test_publication_gate.py` must stay green. Never commit a real case id, internal host, credential, identity number, USCC, real subject name or authorized capture bundle — including in git history.
 - The gate stores no real value: build patterns from fragments so the scanner never trips on itself. Real-data checks that need a literal vocabulary must read it from outside the repository.
+
+## Plain-language display layer (v0.9.7)
+
+- `ln_agent/plain_language.py` is a **DISPLAY_ONLY explanation layer**, not a decision step. It is
+  called by `build_disposition()` only *after* `recommendation` / `business_conclusion` / `report` /
+  `final_indicator` are final. It reads only `subject.facts`, `hit.facts`, `EvidenceResult` rule
+  findings, `source_refs` and the final disposition labels. **Never** create a `Fact`, set
+  `checked`, call a model/tool, add a source, or change a conclusion / route / rule / gate / FI.
+- `PolicyGuard.validate_disposition_draft()` enforces the `display_layer` section of
+  `skills/disposition_reporting/contract.json`: `plain_summary` is required, `kind` must be
+  `DISPLAY_ONLY`, `changes_business_conclusion` / `adds_evidence` / `clears_hit` must all be
+  `False`, `compare` must be non-empty, and an unresolved hit's `why_not` must contain 「不是」.
+  Keep the two axes (business conclusion vs final indicator) separate and explain them when they
+  disagree; 「误报·未命中」 is never a clearance.
+- **Only `企业注册号` / `证件号码` / `出生日期` are identifying fields.** Address and region change
+  over time and must never be called hard exclusion evidence. If the comparison table contains a
+  「明确冲突」 row, do not write 「没有任何冲突」; explain why that field cannot identify a subject.
+  Translate raw ids (`dob`, `document_number`, `registration_number`) to Chinese in reviewer-facing
+  text. A company hit must not repeat the same identifier label twice.
+- Presentation order is fixed and must not be inverted: one-sentence conclusion → field comparison
+  table → why → why not another conclusion → reviewer's next step → evidence → draft caveat.
+  Status codes (`DRAFT_NOT_APPROVED`, `FI-*`, route, rule ids, source domains, LN record ids,
+  `EVALUATE / ...` paths) belong in a collapsed technical section, never in the primary view.
+- `scripts/build_demo.py` schema is `ln-agent-demo-workbench/1.3`. Every hit must have a unique
+  `explanation.tag`, a non-empty `compare`, and a `why_not` that says a low review priority is not
+  a clearance. `_assert_synthetic()` and `tests/test_public_demo.py` are the guard. Regenerate
+  `demo.html` and `examples/demo_workbench_data.json` together; regenerate `replay.html` with
+  `--tests <current passing count>` so the published validation count is never `null`.
+- `ln_agent/workbench/static/app.js` renders `disp.plain_summary` first and folds `internal_note`
+  and technical fields into `<details class="technical-details">`. Do not revert to status codes.
+- Full suite: **259 tests passing**. Update `README.md`, `docs/PLAIN_LANGUAGE.md`, the expert
+  package harness and the expert's default prompt together whenever this layer changes.

@@ -137,7 +137,7 @@ Skill 契约 `skills/disposition_reporting/contract.json` 里同时保留原有�
 python3 -m unittest tests.test_final_indicator -v     # 14 项：三条规则 + 围栏 + 汇总
 python3 -m unittest tests.test_publication_gate -v    # 8 项：全仓 + 全历史脱敏闸门
 python3 scripts/build_demo.py                          # 重生成 demo.html / 数据 / index.html
-python3 scripts/build_replay.py --tests 242            # 重生成 replay.html
+python3 scripts/build_replay.py --tests 259            # 重生成 replay.html
 python3 scripts/check_sensitive.py                     # 推送前发布闸门（退出码 0 = 干净）
-python3 -m unittest discover -s tests -q               # 242 项全量回归
+python3 -m unittest discover -s tests -q               # 259 项全量回归
 ```

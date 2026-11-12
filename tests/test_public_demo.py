@@ -38,7 +38,7 @@ class PublicDemoSafetyTests(unittest.TestCase):
     def test_published_data_is_synthetic_only(self):
         p = _payload()
         blob = json.dumps(p, ensure_ascii=False)
-        self.assertEqual(p["schema"], "ln-agent-demo-workbench/1.2")
+        self.assertEqual(p["schema"], "ln-agent-demo-workbench/1.3")
         for marker in FORBIDDEN:
             self.assertNotIn(marker, blob, f"real-data marker leaked: {marker}")
         self.assertIsNone(INTERNAL_HOST.search(blob), "internal system URL leaked")
@@ -125,6 +125,51 @@ class PublicDemoSafetyTests(unittest.TestCase):
         for needle in ("最终指标 · 全批唯一汇总", "需人工复核率", "FI-1 命中",
                        "FI-2 疑似命中", "FI-3 误报·未命中", "按最终指标："):
             self.assertIn(needle, html, f"missing final indicator UI: {needle}")
+
+    def test_every_hit_has_a_human_readable_explanation(self):
+        """v0.9.7: reviewers asked "how exactly did it hit / how were the
+        others excluded?". Machine status codes must never be the main view."""
+        p = _payload()
+        self.assertEqual(len(p["how_to_read"]), 4)
+        labels = {x["label"] for x in p["how_to_read"]}
+        self.assertIn("为什么大批量的都能归到误报", labels)
+        hits = [h for c in p["cases"] for h in c["hits"]]
+        self.assertEqual(len(hits), 154)
+        tags = []
+        for hit in hits:
+            e = hit["explanation"]
+            for field in ("tag", "headline", "compare", "why", "why_not",
+                          "next_step", "evidence", "caveat"):
+                self.assertTrue(e[field], f"missing explanation.{field}")
+            self.assertGreaterEqual(len(e["compare"]), 4)
+            for row in e["compare"]:
+                self.assertEqual(set(row) & {"field", "subject", "list",
+                                             "result", "note"},
+                                 {"field", "subject", "list", "result", "note"})
+            # A "not a clearance" guard: under-specified hits must never read
+            # like the system let them through.
+            if hit["conclusion"] == "无法确定" or hit["final_indicator"] == "误报·未命中":
+                self.assertIn("不是", e["why_not"])
+            # No raw engine status codes in the primary reading surface.
+            primary = e["headline"] + e["why"] + e["why_not"] + e["next_step"]
+            for code in ("DRAFT_NOT_APPROVED", "INSUFFICIENT_EVIDENCE_RECORDED",
+                         "POLICY_BLOCKED_REVIEW", "RULE_ENGINE"):
+                self.assertNotIn(code, primary)
+            self.assertTrue(hit["path_cn"])
+            self.assertNotIn("EVALUATE", hit["path_cn"])
+            tags.append(e["tag"])
+        self.assertEqual(len(set(tags)), 154, "per-hit explanations collapsed")
+
+    def test_demo_html_puts_plain_language_first_and_folds_technical_fields(self):
+        html = DEMO_HTML.read_text(encoding="utf-8")
+        for needle in ("这一批是怎么判的 · 先看这里", "比了哪些字段：",
+                       "为什么这么判：", "为什么不是别的结论：",
+                       "复核人下一步做什么：", "证据来源：",
+                       "查看技术字段与执行路径（给开发 / 审计看）",
+                       'id="howto"', 'class="ex-tech"', 'class="ex-warn"'):
+            self.assertIn(needle, html, f"missing plain-language UI: {needle}")
+        # Technical fields exist but only behind the collapsed <details>.
+        self.assertIn("技术字段", html)
 
     def test_qcc_shaped_profile_and_connector_discipline(self):
         p = _payload()

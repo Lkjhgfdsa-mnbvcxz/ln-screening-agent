@@ -1,3 +1,50 @@
+## V0.9.7 — Plain-language, DISPLAY-ONLY explanation layer
+
+> Reviewer feedback: "不是你看这个结果像人话吗 谁看得懂啊 到底是怎么命中的 其他排除是怎么排除",
+> and "这个专家，谁会让你跑 demo 啊，第一条应该是让他去查这个命中没命中不良记录".
+
+### What changed (display only — the decision chain is untouched)
+
+- **No new decision logic.** `Rule Engine → PolicyGuard → Risk Gate → Decision Router → Disposition`,
+  FI-1/2/3, `business_conclusion`, `recommendation`, `route`, evidence, timing and the model-fact
+  boundary are all unchanged. The new code only *describes* an already-final decision.
+- New `ln_agent/plain_language.py` builds `plain_summary` from existing deterministic fields only:
+  `kind="DISPLAY_ONLY"`, `headline`, `compare` (field-by-field `入网主体 / 名单记录 / 结果` rows),
+  `why`, `why_not`, `next_step`, `evidence`, `caveat`, plus three always-false flags.
+  It never creates a `Fact`, never calls a model/tool, never sets `checked`.
+- `build_disposition()` attaches `plain_summary` **after** every decision field is final.
+  `skills/disposition_reporting/contract.json` v1.2 adds a `display_layer` section and makes
+  `plain_summary` a required output field; `PolicyGuard.validate_disposition_draft()` now rejects
+  a missing summary, a non-`DISPLAY_ONLY` kind, a tampered flag, an empty comparison, and any
+  unresolved hit whose `why_not` fails to say it is **not** a clearance.
+- **Self-consistency fixes found while writing the layer**: soft fields (address / region) are
+  never described as hard exclusions; a confirmed hit with a differing address no longer claims
+  "no conflicts"; company hits no longer print "企业注册号、企业注册号"; raw ids such as `dob`
+  are translated to Chinese; the decisive FI basis (e.g. "政策阻断，不得归入误报") is now shown
+  instead of only the first two items; the `business_conclusion` vs `final_indicator` two-axis
+  difference is explained when they disagree.
+- **Public demo** (`scripts/build_demo.py`, schema `ln-agent-demo-workbench/1.3`): home page gains
+  "这一批是怎么判的 · 先看这里" (4 plain-language cards covering 命中 / 疑似命中 / 误报·未命中 /
+  why large batches group as false positives). Every one of the 154 hits gets a unique
+  `explanation` (tag / headline / field comparison / why / why_not / next_step / evidence /
+  caveat) and `path_cn`. Machine fields move into a collapsed `<details class="ex-tech">`.
+  Excluded hits now explain the exact conflicting field and both values, and state that a
+  `误报·未命中` indicator is only a review-priority label, not a clearance.
+- **Live workbench** (`app.js` / `style.css`): `plain_summary` is the primary card — headline,
+  colour-coded comparison table, why / why-not / next step / evidence / caveat. `internal_note`,
+  route, rule ids, technical status and raw execution path move into the collapsed
+  "查看技术字段与执行路径（给开发 / 审计看）" block.
+- **Replay** (`scripts/build_replay.py`): each hit carries `plain_summary`; hit cards lead with its
+  headline and the detail pane renders the same plain-language card.
+- **WorkBuddy Agent expert** (`ln-screening-expert` v1.1.0): `defaultInitPrompt` and the first
+  quick prompts are now business verification questions ("does this hit have an adverse record,
+  is it a real hit, which fields were compared, how were the others excluded") instead of
+  "run the demo". The Agent MD adds a "第零原则：先回答业务问题" and a hard plain-language output
+  spec that bans status codes as the primary display.
+- New `docs/PLAIN_LANGUAGE.md` documents the boundary and the field contract.
+- Tests: 2 new demo tests + 15 new `tests/test_plain_language.py` tests, **259 passing**.
+  Regenerated `demo.html`, `replay.html`, `index.html` and both example JSON payloads.
+
 ## V0.9.6 — Final indicator (FI-1/2/3), publication gate, history scrub
 
 ### Final indicator: explicit outcome for every hit, one batch-level metric

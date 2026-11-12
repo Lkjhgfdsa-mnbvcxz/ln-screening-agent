@@ -1,11 +1,11 @@
 {
   "id": "SKILL_DISPOSITION_REPORTING_V1",
-  "version": "1.1",
+  "version": "1.2",
   "scope": "disposition_reporting",
   "read_only": true,
   "trigger_prefixes": [],
   "allowed_tool_names": ["disposition_writer"],
-  "required_output_fields": ["business_conclusion", "business_conclusion_status", "recommendation", "internal_note", "compliance_message", "report_recommended", "manual_queue_required", "source_refs", "automatically_sent", "automatically_cleared", "final_indicator", "final_indicator_rule", "final_indicator_basis", "final_indicator_status", "final_indicator_does_not_clear_hit"],
+  "required_output_fields": ["business_conclusion", "business_conclusion_status", "recommendation", "internal_note", "compliance_message", "report_recommended", "manual_queue_required", "source_refs", "automatically_sent", "automatically_cleared", "final_indicator", "final_indicator_rule", "final_indicator_basis", "final_indicator_status", "final_indicator_does_not_clear_hit", "plain_summary"],
   "prohibited_shortcuts": ["信息不足自动判误报", "疑似命中写成确认命中", "无来源生成事由", "报告自动发送", "无政策要求默认人工队列"],
   "derived_metric": {
     "name": "final_indicator",
@@ -16,5 +16,13 @@
     "must_always_be_true": ["final_indicator_does_not_clear_hit"],
     "prohibited_actions": ["清除或白名单命中", "自动放行入网主体", "自动发送报告", "因信息不足创建人工调查任务", "由大模型生成判定依据"],
     "note": "『误报·未命中』仅为复核优先级与统计口径，不是排除决定；业务结论草稿保持不变。prohibited_shortcuts 里的『信息不足自动判误报』约束的是 disposition，不是本派生指标。"
+  },
+  "display_layer": {
+    "name": "plain_summary",
+    "kind": "DISPLAY_ONLY",
+    "required_fields": ["kind", "headline", "compare", "why", "why_not", "next_step", "evidence", "caveat"],
+    "must_always_be_false": ["changes_business_conclusion", "adds_evidence", "clears_hit"],
+    "prohibited_actions": ["改写业务结论或最终指标", "新增证据或把模型文字当作已核实事实", "用说明文字暗示已放行", "因信息不足创建人工调查任务"],
+    "note": "人话说明是 Rule Engine → PolicyGuard → Decision Router → Disposition 之后的展示层；只解释既有结论，不参与判定。没有证据表明是同一主体时，必须写明『不是放行』。"
   }
 }

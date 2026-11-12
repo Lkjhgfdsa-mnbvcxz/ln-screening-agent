@@ -184,6 +184,22 @@ class PolicyGuard:
             raise PolicyViolation("disposition requires concise internal note")
         if disposition.get("automatically_sent") or disposition.get("automatically_cleared"):
             raise PolicyViolation("automatic report transmission or clearance is forbidden")
+        # v0.9.7 display-only plain-language summary: it may explain a
+        # decision but may never become one. Enforced at the same boundary.
+        plain = disposition.get("plain_summary")
+        layer = skill.get("display_layer", {})
+        if not isinstance(plain, dict) or plain.get("kind") != layer.get("kind"):
+            raise PolicyViolation("plain summary must be declared DISPLAY_ONLY")
+        for key in layer.get("required_fields", []):
+            if not plain.get(key):
+                raise PolicyViolation(f"plain summary missing field: {key}")
+        for key in layer.get("must_always_be_false", []):
+            if plain.get(key) is not False:
+                raise PolicyViolation(f"plain summary may not set {key}=True")
+        if not isinstance(plain.get("compare"), list) or not plain["compare"]:
+            raise PolicyViolation("plain summary must show the field comparison")
+        if business is None and "不是" not in plain.get("why_not", ""):
+            raise PolicyViolation("unresolved hit must not be described as a clearance")
         if disposition.get("attribution", "").startswith("LN风险事由") and not disposition.get("source_refs"):
             raise PolicyViolation("source-attributed risk statement missing source references")
         if disposition["report_recommended"] and not disposition.get("compliance_message"):

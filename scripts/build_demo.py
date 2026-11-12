@@ -164,6 +164,161 @@ def _reason(conclusion: str, domain: str, ln_id: str) -> str:
             f"命中侧 LN 记录号 {ln_id}（非证件号）。")
 
 
+# ---------------------------------------------------------------------------
+# v0.9.7: plain-language explanations.
+#
+# Reviewers said the old per-hit text was machine vocabulary (status codes,
+# rule ids, source domains) and never answered "how was this hit confirmed?"
+# or "how were the others excluded?".  These fields are DISPLAY ONLY: they
+# describe the already-computed conclusion, they never change it.  The rule
+# engine, PolicyGuard, Decision Router, Disposition and FI-1/2/3 are untouched.
+# ---------------------------------------------------------------------------
+
+def _explanation(*, bucket: str, entity: str, name: str, subject: str,
+                 domain: str, ln_id: str, category: str, region: str,
+                 subject_region: str, severity: str, serious: bool,
+                 location_ok: bool, source_count: int, ci: int, n: int) -> dict:
+    """Build a human-readable, field-by-field account of ONE hit."""
+    reg = f"SYN-USCC-{ci + 1:04d}"
+    doc = f"SYN-DOC-{ci + 1:04d}-{n:03d}"
+    dob = f"19{60 + (ci * 7 + n) % 35:02d}-0{(ci + n) % 9 + 1}-{(n * 3) % 27 + 1:02d}"
+    other_year = 40 + (ci * 5 + n) % 19   # 1940-1958, never overlaps dob (1960+)
+    other_dob = f"19{other_year:02d}-0{(ci * 3 + n) % 9 + 1}-{(n * 7) % 27 + 1:02d}"
+    assert other_dob != dob
+    name_field = "企业名称" if entity == "企业" else "姓名"
+    id_field = "企业注册号" if entity == "企业" else "证件号码"
+    date_field = "成立日期" if entity == "企业" else "出生日期"
+    id_value = reg if entity == "企业" else doc
+    compare: list[dict] = []
+    evidence = f"来自 {domain} 等 {source_count} 条名单记录源，名单记录号 {ln_id}"
+
+    if bucket == "命中":
+        headline = f"判定为命中：{name_field}对上了，更关键的是{id_field}完全一致，可以确认是同一个主体。"
+        compare = [
+            {"field": name_field, "subject": subject,
+             "list": f"{name}（按名称规则与入网主体匹配）",
+             "result": "名称匹配", "note": "名字对上只说明被名单捞出来，不能定性"},
+            {"field": id_field, "subject": id_value, "list": id_value,
+             "result": "完全一致", "note": "这是唯一标识，编号一致才算同一主体"},
+            {"field": date_field, "subject": dob, "list": dob,
+             "result": "一致", "note": "交叉印证，不是主要依据"},
+            {"field": "所在地区", "subject": subject_region, "list": subject_region,
+             "result": "一致", "note": "辅助信息，地区相同不能单独定性"},
+        ]
+        why = (f"系统先把入网主体的 {id_field}（{id_value}）与名单记录里的编号逐一比对，"
+               f"两者一字不差；再核对名称、日期、地区，也没有出现冲突。"
+               f"唯一标识一致且没有反证，所以规则判定为「命中」。")
+        why_not = (f"没有判为「未命中」，是因为{id_field}、{date_field}都没有出现冲突"
+                   f"（名称相同、地址相同只是辅助信息，真正定案的是唯一标识）；"
+                   f"也没有判为「疑似命中」，因为不需要再补证件信息就能确认。")
+        next_step = "请复核名单原文与主体证件，确认编号不是录入错误；这是草稿，需授权人员审批后才生效，不会自动上报或放行。"
+    elif bucket == "未命中":
+        headline = f"判定为未命中（排除候选）：名字虽然撞上了，但{date_field}明确不同，不可能是同一个主体。"
+        compare = [
+            {"field": name_field, "subject": subject,
+             "list": f"{name}（按名称规则与入网主体匹配）",
+             "result": "名称匹配", "note": "这就是被名单捞出来的原因"},
+            {"field": date_field, "subject": dob, "list": other_dob,
+             "result": "明确冲突", "note": f"同一个主体的{date_field}不可能有两个"},
+            {"field": id_field, "subject": id_value, "list": "名单侧未回传",
+             "result": "无法比对", "note": "因此排除依据是日期冲突，不是证件号"},
+            {"field": "名单事由", "subject": "—", "list": f"{category}·{severity}",
+             "result": "已记录", "note": "事由不改变身份判断"},
+        ]
+        why = (f"入网主体的{date_field}是 {dob}，名单记录写的是 {other_dob}，两者明确冲突；"
+               f"这属于硬身份字段，冲突即可作为排除候选。"
+               f"换句话说：这条是「同名不同主体」。")
+        why_not = (f"没有判为「命中」，因为{id_field}没有形成一致匹配，且{date_field}明确冲突；"
+                   f"最终指标归到「误报·未命中」只是统计与复核优先级口径，"
+                   f"不是系统判它「没有风险」。这同样不是「放行」：命中记录没有被清除，"
+                   f"排除要由授权人员确认。")
+        next_step = f"请人工核对名单原件里的{date_field}是否为录入错误；确认无误后才可走排除审批，系统不会自动清除这条命中。"
+    elif bucket in ("疑似命中", "严重待核"):
+        headline = (("业务结论仍留空、但复核优先级提高：名字对上了、名单事由重大且事发地一致，"
+                     f"可名单侧没给{id_field}，无法确认是不是同一个主体。")
+                    if bucket == "严重待核" else
+                    "判定为疑似命中草稿：名字对上了、名单事由重大且事发地一致，"
+                    f"但名单侧没给{id_field}，无法确认是不是同一个主体。")
+        compare = [
+            {"field": name_field, "subject": subject,
+             "list": f"{name}（按名称规则与入网主体匹配）",
+             "result": "名称匹配", "note": "只说明撞名，不说明同人"},
+            {"field": id_field, "subject": id_value, "list": "名单侧未回传",
+             "result": "无法比对", "note": "缺唯一标识，不能确认同一主体"},
+            {"field": date_field, "subject": dob, "list": "名单侧未回传",
+             "result": "无法比对", "note": "缺硬身份字段"},
+            {"field": "事发地 / 主体地区", "subject": subject_region, "list": region,
+             "result": "一致", "note": "结构化字段精确匹配，不是模型猜的"},
+            {"field": "名单事由", "subject": "—", "list": f"{category}·重大（有来源标识）",
+             "result": "重大", "note": "有可引用来源，不能当普通误报放掉"},
+        ]
+        why = (f"能唯一识别主体的{id_field}、{date_field}，名单这条记录都没有回传；"
+               f"但名单事由等级为重大、有来源标识，且名单载明的事发地（{region}）"
+               f"与入网主体地区（{subject_region}）精确一致。"
+               f"两个条件同时成立时，即使业务上还下不了结论，复核优先级也要提高。")
+        why_not = (f"没有判为「命中」，因为没有任何唯一标识匹配；"
+                   f"也没有归到「误报」，因为事由重大且事发地一致，不能只凭「没给证件号」就放掉。"
+                   f"这同样不是「放行」：命中记录没有被清除，排除要由授权人员确认。"
+                   + ("业务结论仍然留空，只是最终指标把它提到疑似命中。" if bucket == "严重待核" else ""))
+        next_step = (f"请打开名单原页/通知附件补取{id_field}或{date_field}，"
+                     f"取到后重新做证件级比对；在此之前不得放行或上报。")
+    else:  # 无法确定 -> 误报·未命中
+        headline = (f"按误报归集：只是名字撞上了，名单侧没有能唯一识别主体的"
+                    f"{id_field}/{date_field}，也没有重大事由，"
+                    f"找不到能证明是同一个主体的证据。")
+        compare = [
+            {"field": name_field, "subject": subject,
+             "list": f"{name}（按名称规则与入网主体匹配）",
+             "result": "名称匹配", "note": "被名单捞出来的唯一原因，重名很常见"},
+            {"field": id_field, "subject": id_value, "list": "名单侧未回传",
+             "result": "无法比对", "note": "名单只给了内部记录号，不是证件号"},
+            {"field": date_field, "subject": dob, "list": "名单侧未回传",
+             "result": "无法比对", "note": "缺硬身份字段"},
+            {"field": "名单侧其他编号", "subject": "—",
+             "list": f"仅内部记录号 {ln_id}",
+             "result": "无法比对", "note": "内部记录号不是证件号，不能拿来认人"},
+            {"field": "事发地", "subject": subject_region,
+             "list": region if location_ok else "名单未载明 / 不一致",
+             "result": "一致" if location_ok else "未形成一致匹配",
+             "note": "缺值按未知处理，绝不靠模型推断"},
+            {"field": "名单事由", "subject": "—",
+             "list": f"{category}·{severity}",
+             "result": "未构成重大事由", "note": "分类存在，但没有可引用的重大风险事件"},
+        ]
+        why = (f"系统能比的唯一标识（{id_field}、{date_field}）名单这条记录一条都没给，"
+               f"只有 {ln_id} 这样的内部记录号；记录原页也没有核验到更细的身份信息。"
+               f"同时名单事由不重大、事发地没有形成一致匹配，"
+               f"所以没有任何证据能说明名单里的主体和入网主体是同一个。")
+        why_not = (f"这不是「放行」也不是「白名单」：命中记录没有被清除，LN 工单状态不变，"
+                   f"只是把这条的复核优先级放低、计入统计口径。"
+                   f"如果后续从通知附件拿到{id_field}或{date_field}，必须重新做证件级比对。")
+        next_step = (f"批量核查时这类可先低优先级处理；抽查时请回名单原页确认通知附件里"
+                     f"是否含{id_field}或{date_field}，有则重新比对。")
+
+    return {
+        "tag": f"{category} · {domain} · 名单记录 {ln_id}",
+        "headline": headline,
+        "compare": compare,
+        "why": why,
+        "why_not": why_not,
+        "next_step": next_step,
+        "evidence": evidence,
+        "caveat": "以上为未经审批的结论草稿；系统不自动放行、不清除命中、不自动发送报告。",
+    }
+
+
+HOW_TO_READ = [
+    {"label": "命中", "color": "hit",
+     "text": "唯一标识（企业注册号 / 证件号 / 出生日期）两侧完全一致，且没有冲突字段 → 确认是同一主体。光是名字一样不算。"},
+    {"label": "疑似命中", "color": "susp",
+     "text": "名字对上了、事由重大、事发地一致，但名单侧缺证件信息 → 既不能确认也不能排除，留给人复核。"},
+    {"label": "误报·未命中", "color": "clear",
+     "text": "只有名字撞上了，名单侧没给证件号 / 生日 / 注册号，也没有重大事由 → 没有证据说是同一个人，先放低复核优先级。不是放行、不是白名单，命中记录仍保留。"},
+    {"label": "为什么大批量的都能归到误报", "color": "unk",
+     "text": "名单命中的触发条件通常只是「名字相同或相近」。真正能定人的是唯一标识；名单通知里往往只有内部记录号，没有证件级信息。逐条能核对的结论就是「查不到能证明同人的证据」，这属于证据不足的归集，不是逐条判定无风险。"},
+]
+
+
 def _indicator(bucket: str, region: str, domain: str, ln_id: str) -> dict:
     """Mirror ln_agent.final_indicator.FI-1/2/3 on synthetic demo data."""
     if bucket == "命中":
@@ -235,6 +390,17 @@ def build() -> dict:
                     "EVALUATE", "RESIDUAL_SUSPICION" if conclusion == "无法确定" else "WRITE_DISPOSITION"]
             if conclusion == "疑似命中":
                 path.insert(3, "INVESTIGATE · workbuddy_llm_capture")
+            path_cn = ["比对入网主体与名单记录的身份字段",
+                       "只读打开名单原页，找证件号 / 生日 / 注册号",
+                       "把取到的字段放回规则引擎再比一次",
+                       "写出结论草稿（不发送、不放行）"]
+            serious = bucket in ("疑似命中", "严重待核")
+            explanation = _explanation(
+                bucket=bucket, entity=entity, name=name, subject=subject,
+                domain=domain, ln_id=ln_id, category=category, region=region,
+                subject_region=region, severity=indicator["severity"],
+                serious=serious, location_ok=indicator["location_consistent"],
+                source_count=3 + (i % 8), ci=ci, n=n)
             hits.append({
                 "hit_id": f"SYN-H{n:03d}",
                 "name": name,
@@ -247,6 +413,8 @@ def build() -> dict:
                 "conclusion_status": "DRAFT_NOT_APPROVED" if conclusion != "无法确定" else "NO_CONCLUSION",
                 "duration_ms": duration,
                 "reason": _reason(bucket, domain, ln_id),
+                "explanation": explanation,
+                "path_cn": path_cn,
                 "stages": STAGES,
                 "stage_ms": [round(duration * w, 1) for w in STAGE_WEIGHTS],
                 "path": path,
@@ -295,7 +463,8 @@ def build() -> dict:
     wall_together = max(c["wall_ms"] for c in cases)
     wall_shared = round(engine_total / 4, 1)
     return {
-        "schema": "ln-agent-demo-workbench/1.2",
+        "schema": "ln-agent-demo-workbench/1.3",
+        "how_to_read": HOW_TO_READ,
         "disclaimer": "SYNTHETIC ONLY — 所有工单号、主体、命中记录、域名与说明均为虚构；仅复现授权本地验证的运行形态与量级，不含任何真实业务数据。",
         "generated_by": "scripts/build_demo.py",
         "note": "本页按『工单主体 → 点进去 → 每条命中进度与最终结论』组织。每条命中同时展示『业务结论草稿』与『最终指标』两个轴；最终指标是派生统计口径，不改变业务结论、不自动放行。并发模型：8 个工单主体同时开始、互不干扰，每个主体内部再由 4 个 worker 并行处理自己的命中；静态版无需 Python 后端。",
@@ -366,6 +535,8 @@ def _assert_synthetic(payload: dict) -> None:
     ind = payload["totals"]["final_indicator_distribution"]
     if sum(ind.values()) != payload["totals"]["hits"]:
         raise RuntimeError("final indicator distribution does not sum to hit count")
+    if len(payload["how_to_read"]) != 4:
+        raise RuntimeError("plain-language 'how to read' panel is incomplete")
     for case in payload["cases"]:
         if sum(case["final_indicator_distribution"].values()) != case["hit_count"]:
             raise RuntimeError("case-level final indicator distribution drifted")
@@ -374,6 +545,13 @@ def _assert_synthetic(payload: dict) -> None:
                 raise RuntimeError("unknown final indicator label")
             if not hit["indicator_does_not_clear_hit"]:
                 raise RuntimeError("final indicator must never clear a hit")
+            ex = hit["explanation"]
+            if len(ex["compare"]) < 4 or not all(
+                    k in ex and ex[k] for k in
+                    ("headline", "why", "why_not", "next_step", "evidence", "caveat")):
+                raise RuntimeError("per-hit plain-language explanation is incomplete")
+            if "不是「放行」" not in ex["why_not"] and hit["final_indicator"] == "误报·未命中":
+                raise RuntimeError("false-positive bucket must state it is not a clearance")
 
 
 INDEX_HTML = """<!DOCTYPE html>
@@ -494,6 +672,33 @@ h1{font-size:24px;margin:0 0 7px;letter-spacing:-.3px}
 .hit.open .reason{display:block}
 .hit .reason b{color:var(--text)}
 .hit .path{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+/* v0.9.7 plain-language explanation */
+.howto{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.howto h2{font-size:15px;margin:0 0 4px}
+.howto .lead{font-size:12.3px;color:var(--muted);margin:0 0 11px}
+.howto-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.howto-grid>div{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.62;color:var(--muted)}
+.howto-grid>div b{display:block;color:var(--text);font-size:12.5px;margin-bottom:2px}
+.howto-grid>div.c-hit{border-left-color:var(--hit)}.howto-grid>div.c-susp{border-left-color:var(--susp)}
+.howto-grid>div.c-clear{border-left-color:var(--clear)}.howto-grid>div.c-unk{border-left-color:var(--unk)}
+.ex-tag{font-size:11.3px;color:var(--muted);margin:2px 0 5px}
+.ex-head{font-size:13.5px;line-height:1.65;color:var(--text);font-weight:600;background:var(--accent2);border-radius:8px;padding:9px 11px;margin:2px 0 10px}
+.ex-q{font-size:12.5px;line-height:1.72;margin:9px 0;color:var(--muted)}
+.ex-q b{color:var(--text)}
+.cmp{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:12px}
+.cmp th{background:var(--panel2);border:1px solid var(--border);padding:6px 8px;text-align:left;color:var(--muted);font-weight:600;white-space:nowrap}
+.cmp td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;word-break:break-word}
+.cmp td:first-child{white-space:nowrap;color:var(--text);font-weight:600}
+.cmp .r-ok{color:var(--clear);font-weight:600}.cmp .r-bad{color:var(--hit);font-weight:600}
+.cmp .r-miss{color:var(--muted);font-weight:600}
+.cmp .small{display:block;color:var(--muted);font-size:11.3px;margin-top:2px;line-height:1.5}
+.ex-warn{font-size:12px;color:var(--muted);border-left:3px solid var(--susp);padding-left:9px;margin:10px 0 0;line-height:1.65}
+.ex-tech{margin-top:11px;border-top:1px dashed var(--border);padding-top:8px}
+.ex-tech summary{cursor:pointer;font-size:12px;color:var(--accent)}
+.ex-tech .techbody{font-size:11.8px;color:var(--muted);line-height:1.7;margin-top:8px}
+.ex-tech .techbody b{color:var(--text)}
+.ex-steps{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.ex-steps i{font-style:normal;font-size:11.3px;background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;color:var(--muted)}
 .hit .path i{font-style:normal;font-size:11px;background:var(--accent2);color:var(--accent);border-radius:5px;padding:2px 7px}
 .more{display:block;width:100%;margin-top:10px}
 .profile{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -534,6 +739,7 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
 
 <div id="home" class="home">
   <div class="kpis" id="kpis"></div>
+  <div class="howto" id="howto"></div>
   <div class="final-panel" id="finalPanel"></div>
   <div class="section-title">工单主体总览 <small>点击任一工单查看逐条命中 · 大批量命中单（88 / 49 条）同样在此</small></div>
   <div class="cases" id="cases"></div>
@@ -584,6 +790,11 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
  }
  function legend(dist){
    return `<div class="legend">${IND_ORDER.filter(k=>dist[k]).map(k=>`<span><i class="dot ${IND_COLORS[k]}"></i><b>${dist[k]}</b> ${k}</span>`).join("")}</div>`;
+ }
+ function renderHowto(){
+   $("howto").innerHTML=`<h2>这一批是怎么判的 · 先看这里</h2>
+     <p class="lead">名单命中通常只因为「名字一样」。真正能定人的是证件号 / 出生日期 / 企业注册号。下面四句话解释全部 ${D.totals.hits} 条命中的归类逻辑；点开任一工单、再点开单条命中，可以看到这一条具体比了哪些字段。</p>
+     <div class="howto-grid">${(D.how_to_read||[]).map(x=>`<div class="c-${esc(x.color)}"><b>${esc(x.label)}</b>${esc(x.text)}</div>`).join("")}</div>`;
  }
  function renderKpis(){
    const t=D.totals, cc=D.concurrency;
@@ -707,12 +918,35 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
          <span class="ms" title="这条命中自己的引擎耗时，不是整批完成时间">${h.duration_ms.toFixed(1)} ms</span>
        </div>
        <div class="reason">
-         <b>最终指标：</b>${esc(h.final_indicator)}（${esc(h.final_indicator_rule)}）· ${esc(h.final_indicator_status)} · 派生统计口径，不改变业务结论、不自动放行或清除命中<br>
-         <b>指标依据：</b><div class="basis">${h.final_indicator_basis.map(x=>`<i>${esc(x)}</i>`).join("")}</div>
-         <b>业务结论草稿：</b>${esc(h.conclusion)}（${esc(h.conclusion_status)}）· 名单事由等级 ${esc(h.severity)} · 事发地 ${esc(h.event_region)} / 主体 ${esc(h.subject_region)} · 事发地一致：${h.location_consistent?"是":"否"}<br>
-         <b>核查说明：</b>${esc(h.reason)}<br>
-         <b>来源：</b>${esc(h.source_domain)} 等 ${h.source_count} 条记录源 · LN 记录号 ${esc(h.ln_id)}
-         <div class="path">${h.path.map(p=>`<i>${esc(p)}</i>`).join("")}</div></div>
+         <div class="ex-tag">${esc(h.explanation.tag)}</div>
+         <div class="ex-head">${esc(h.explanation.headline)}</div>
+         <div class="ex-q"><b>比了哪些字段：</b></div>
+         <table class="cmp"><thead><tr><th>比对项</th><th>入网主体</th><th>名单记录</th><th>结果</th></tr></thead><tbody>
+           ${h.explanation.compare.map(c=>{
+             const cls=/一致/.test(c.result)&&!/不一致|未形成/.test(c.result)?"r-ok":(/冲突/.test(c.result)?"r-bad":"r-miss");
+             return `<tr><td>${esc(c.field)}</td><td>${esc(c.subject)}</td><td>${esc(c.list)}</td><td class="${cls}">${esc(c.result)}<span class="small">${esc(c.note)}</span></td></tr>`;
+           }).join("")}
+         </tbody></table>
+         <div class="ex-q"><b>为什么这么判：</b>${esc(h.explanation.why)}</div>
+         <div class="ex-q"><b>为什么不是别的结论：</b>${esc(h.explanation.why_not)}</div>
+         <div class="ex-q"><b>复核人下一步做什么：</b>${esc(h.explanation.next_step)}</div>
+         <div class="ex-q"><b>证据来源：</b>${esc(h.explanation.evidence)}</div>
+         <div class="ex-warn">${esc(h.explanation.caveat)}</div>
+         <div class="ex-q"><b>这条走了哪几步：</b>
+           <div class="ex-steps">${h.path_cn.map(p=>`<i>${esc(p)}</i>`).join("")}</div></div>
+         <details class="ex-tech"><summary>查看技术字段与执行路径（给开发 / 审计看）</summary>
+           <div class="techbody">
+             <b>业务结论草稿：</b>${esc(h.conclusion)}（${esc(h.conclusion_status)}）·
+             <b>最终指标：</b>${esc(h.final_indicator)}（${esc(h.final_indicator_rule)}，${esc(h.final_indicator_status)}）<br>
+             <b>名单事由等级：</b>${esc(h.severity)} · <b>事发地：</b>${esc(h.event_region)} / 主体 ${esc(h.subject_region)} ·
+             <b>事发地一致：</b>${h.location_consistent?"是":"否"}<br>
+             <b>指标依据：</b><div class="basis">${h.final_indicator_basis.map(x=>`<i>${esc(x)}</i>`).join("")}</div>
+             <b>原始核查说明：</b>${esc(h.reason)}<br>
+             <b>来源：</b>${esc(h.source_domain)} 等 ${h.source_count} 条记录源 · LN 记录号 ${esc(h.ln_id)}
+             <div class="path">${h.path.map(p=>`<i>${esc(p)}</i>`).join("")}</div>
+           </div>
+         </details>
+       </div>
      </div>`).join("");
    [...$("hits").querySelectorAll(".steps")].forEach(el=>el.querySelectorAll("i").forEach(i=>i.classList.add("on")));
  }
@@ -770,7 +1004,7 @@ footer{margin-top:24px;color:var(--muted);font-size:12.5px;display:flex;gap:16px
    document.documentElement.dataset.theme=dark?"light":"dark";
    $("theme").textContent=dark?"切换深色":"切换浅色";
  };
- renderKpis();renderCases();
+ renderHowto();renderKpis();renderCases();
  // Deep link: demo.html#SYN-LN-2602 opens that checklist directly, useful for
  // sharing a large-hit example and for documentation screenshots.
  const wanted=decodeURIComponent(location.hash.replace(/^#/,""));

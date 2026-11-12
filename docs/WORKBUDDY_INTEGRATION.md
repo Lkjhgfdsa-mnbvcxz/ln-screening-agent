@@ -69,9 +69,9 @@ report = Orchestrator(authorized_policy(), FixtureResearchTool({}),
 ```bash
 python3 run.py inspect                       # 8 Skills / 12 Tool 描述
 python3 run.py web                           # 选择「WorkBuddy 本地采集 · 合成回放」
-python3 scripts/build_replay.py --tests 242  # 重新生成静态回放
+python3 scripts/build_replay.py --tests 259  # 重新生成静态回放
 python3 scripts/check_sensitive.py           # 全仓 + 全历史发布闸门
-python3 -m unittest discover -s tests -v    # 242 项，含 16 项接入与绕过防护回归测试
+python3 -m unittest discover -s tests -v    # 259 项，含 16 项接入与绕过防护回归测试
 ```
 
 ## v0.9.6 补充：最终指标不在这条判定链上
